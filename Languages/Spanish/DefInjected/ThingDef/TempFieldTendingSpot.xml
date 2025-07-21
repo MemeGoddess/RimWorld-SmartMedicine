@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+<TempSleepSpot.label>zona de atención temporal</TempSleepSpot.label>
+<TempSleepSpot.description>Crea automáticamente una zona de atención para curar en el terreno. Se elimina cuando deja de usarse</TempSleepSpot.description>
+
+</LanguageData>
