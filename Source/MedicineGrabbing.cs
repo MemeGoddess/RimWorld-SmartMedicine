@@ -151,6 +151,14 @@ namespace SmartMedicine
 			if (job.count == 0)
 				return;
 
+			// Bit of a hacky fix, but basically ReTend creates a job with -1 count, and we can't set the count based on GetMedicineCountToFullyHeal, because it's already tended.
+			// The good news is 1 will always be the right amount.
+			if (job.count == -1 && __instance.GetType().Name
+				    .Equals("JobDriver_ReTendPatient", StringComparison.CurrentCultureIgnoreCase))
+			{
+				job.count = 1;
+			}
+
 			if (job.draftedTend)
 			{
 				// WorkGiver_Tend patch above sets job.count
@@ -164,6 +172,9 @@ namespace SmartMedicine
 				//if (job.count < 1) job.count = 1;
 			}
 			int needCount = Mathf.Min(medicineToDrop.stackCount, job.count);
+
+
+			
 
 			Log.Message($"{healer} Starting Tend with {medicineToDrop}:{needCount}");
 
