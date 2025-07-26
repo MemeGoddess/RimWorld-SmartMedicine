@@ -173,9 +173,6 @@ namespace SmartMedicine
 			}
 			int needCount = Mathf.Min(medicineToDrop.stackCount, job.count);
 
-
-			
-
 			Log.Message($"{healer} Starting Tend with {medicineToDrop}:{needCount}");
 
 			job.targetB = DropIt(medicineToDrop, needCount, healer, job);
