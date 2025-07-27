@@ -120,10 +120,26 @@ namespace SmartMedicine
 
 		public static bool IsUrgent(this Hediff h)
 		{
-			return !(h is Hediff_Injury)
-					|| (h as Hediff_Injury).Bleeding
-					|| (h as Hediff_Injury).TryGetComp<HediffComp_Infecter>() != null
-					|| (h as Hediff_Injury).TryGetComp<HediffComp_GetsPermanent>() != null;
+			if (h is not Hediff_Injury injury)
+			{
+				return false;
+			}
+
+			bool isBleeding = injury.Bleeding;
+
+			// If it has infecter, check the infection chance. If no infecter comp, then canInfect is false.
+			bool canInfect = injury.TryGetComp<HediffComp_Infecter>() is HediffComp_Infecter
+			{
+				props: HediffCompProperties_Infecter { infectionChance: > 0 }
+			};
+
+			// If it has permanent, check the IsPermanent. If no permanent comp, then notPermanent is false.
+			bool notPermanent = injury.TryGetComp<HediffComp_GetsPermanent>() is HediffComp_GetsPermanent
+			{
+				IsPermanent: true
+			};
+
+			return isBleeding || canInfect || notPermanent;
 		}
 	}
 
