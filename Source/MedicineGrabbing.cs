@@ -124,22 +124,8 @@ namespace SmartMedicine
 			{
 				return false;
 			}
-
-			bool isBleeding = injury.Bleeding;
-
-			// If it has infecter, check the infection chance. If no infecter comp, then canInfect is false.
-			bool canInfect = injury.TryGetComp<HediffComp_Infecter>() is HediffComp_Infecter
-			{
-				props: HediffCompProperties_Infecter { infectionChance: > 0 }
-			};
-
-			// If it has permanent, check the IsPermanent. If no permanent comp, then notPermanent is false.
-			bool notPermanent = injury.TryGetComp<HediffComp_GetsPermanent>() is HediffComp_GetsPermanent
-			{
-				IsPermanent: true
-			};
-
-			return isBleeding || canInfect || notPermanent;
+			// If it has infecter component, tend with medicine as tend quality plays a role in infection chance.
+			return injury.Bleeding || injury.TryGetComp<HediffComp_Infecter>() is not null;
 		}
 	}
 
