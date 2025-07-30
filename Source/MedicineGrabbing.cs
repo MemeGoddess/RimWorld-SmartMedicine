@@ -120,12 +120,10 @@ namespace SmartMedicine
 
 		public static bool IsUrgent(this Hediff h)
 		{
-			if (h is not Hediff_Injury injury)
-			{
-				return false;
-			}
-			// If it has infecter component, tend with medicine as tend quality plays a role in infection chance.
-			return injury.Bleeding || injury.TryGetComp<HediffComp_Infecter>() is not null;
+			return h is not Hediff_Injury
+					|| (h as Hediff_Injury).Bleeding
+					|| (h as Hediff_Injury).TryGetComp<HediffComp_Infecter>() != null
+					|| (h as Hediff_Injury).TryGetComp<HediffComp_GetsPermanent>() != null;
 		}
 	}
 
