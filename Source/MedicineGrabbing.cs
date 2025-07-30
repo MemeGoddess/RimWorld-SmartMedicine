@@ -122,8 +122,7 @@ namespace SmartMedicine
 		{
 			return h is not Hediff_Injury
 					|| (h as Hediff_Injury).Bleeding
-					|| (h as Hediff_Injury).TryGetComp<HediffComp_Infecter>() != null
-					|| (h as Hediff_Injury).TryGetComp<HediffComp_GetsPermanent>() != null;
+					|| (h as Hediff_Injury).TryGetComp<HediffComp_Infecter>() != null;
 		}
 	}
 
