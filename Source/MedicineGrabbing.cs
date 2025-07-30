@@ -120,7 +120,7 @@ namespace SmartMedicine
 
 		public static bool IsUrgent(this Hediff h)
 		{
-			return h is not Hediff_Injury
+			return !(h is Hediff_Injury)
 					|| (h as Hediff_Injury).Bleeding
 					|| (h as Hediff_Injury).TryGetComp<HediffComp_Infecter>() != null;
 		}
