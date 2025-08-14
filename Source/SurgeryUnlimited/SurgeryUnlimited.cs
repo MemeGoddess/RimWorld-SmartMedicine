@@ -96,16 +96,22 @@ namespace SmartMedicine.SurgeryUnlimited
 			{
 				CodeInstruction inst = list[i];
 
-				if (i + 1 < list.Count && 
-					inst.LoadsConstant(GameFont.Small) &&
-					list[i + 1].Calls(SetFontInfo))//Text.Small
+				if (i + 1 < list.Count &&
+				    inst.LoadsConstant(GameFont.Small) &&
+				    list[i + 1].Calls(SetFontInfo))
 				{
-					//Draw pawn surgery option
-					//Rect leftRect, Pawn pawn, float curY
+					// emit the two originals first
+					yield return inst;            // ... Small
+					yield return list[i + 1];     // ... call SetFontInfo
+
+					// now inject immediately AFTER the call
 					yield return new CodeInstruction(OpCodes.Ldarg_0);
 					yield return new CodeInstruction(OpCodes.Ldarg_1);
 					yield return new CodeInstruction(OpCodes.Ldarga_S, 2);
 					yield return new CodeInstruction(OpCodes.Call, DrawSurgeryOptionInfo);
+
+					i++; // already yielded list[i+1]
+					continue;
 				}
 
 				yield return inst;
