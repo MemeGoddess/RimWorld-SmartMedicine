@@ -32,6 +32,8 @@ namespace SmartMedicine
 
 		public bool defaultUnlimitedSurgery = false;
 
+		public bool stockAnythingWithoutDev = false;
+
 		public bool FieldTendingActive(Pawn patient)
 		{
 			return patient.IsFreeColonist && 
@@ -94,6 +96,8 @@ namespace SmartMedicine
 
 			options.CheckboxLabeled("TD.SettingGlobalSurgeryUnlimited".Translate(), ref defaultUnlimitedSurgery, "TD.SettingGlobalSurgeryUnlimitedDesc".Translate());
 
+			options.CheckboxLabeled("TD.StockAnythingWithoutDev".Translate(), ref stockAnythingWithoutDev, "TD.SettingGlobalSurgeryUnlimitedDesc".Translate());
+
 			options.End();
 		}
 		
@@ -119,6 +123,7 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref fieldTendingForLackOfBed, "fieldTendingForLackOfBed", false);
 			Scribe_Values.Look(ref fieldTendingAlways, "fieldTendingAlways", false);
 			Scribe_Values.Look(ref defaultUnlimitedSurgery, "defaultUnlimitedSurgery", false);
+			Scribe_Values.Look(ref stockAnythingWithoutDev, "defaultUnlimitedSurgery", false);
 		}
 	}
 }

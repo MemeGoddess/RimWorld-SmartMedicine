@@ -351,7 +351,7 @@ namespace SmartMedicine
 			Text.Font = GameFont.Medium;
 			Widgets.Label(inRect.TopPartPixels(Text.LineHeight * 2), title);
 			Text.Font = GameFont.Small;
-			if (Prefs.DevMode && Widgets.ButtonText(inRect.TopPartPixels(Text.LineHeight * 2).RightPart(0.3f), "Stock ANYTHING"))
+			if ((Prefs.DevMode || Mod.settings.stockAnythingWithoutDev) && Widgets.ButtonText(inRect.TopPartPixels(Text.LineHeight * 2).RightPart(0.3f), "Stock ANYTHING"))
 				anything = !anything;
 
 
