@@ -42,5 +42,5 @@
 	<TD.PawnSettingSurgeryUnlimited>Surgery uses best</TD.PawnSettingSurgeryUnlimited>
 	<TD.DefaultCare>Default care</TD.DefaultCare>
 	<TD.RemoveTempTendDesc>Remove this (in case it lingers around after it's unused)</TD.RemoveTempTendDesc>
-	
+	<TD.StockAnythingWithoutDev>Stock ANYTHING button without Dev Mode</TD.StockAnythingWithoutDev>
 </LanguageData>
