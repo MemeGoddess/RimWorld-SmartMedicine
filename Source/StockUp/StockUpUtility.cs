@@ -5,6 +5,7 @@ using System.Text;
 using Verse;
 using TD.Utilities;
 using HarmonyLib;
+using RimWorld;
 
 namespace SmartMedicine
 {
@@ -87,7 +88,7 @@ namespace SmartMedicine
 			return pawn.StockUpSettings().Keys;
 		}
 
-		public static bool StockingUpOn(this Pawn pawn, Thing thing) => pawn.StockingUpOn(thing.def);
+		public static bool StockingUpOn(this Pawn pawn, Thing thing) => thing is MinifiedThing minifiedThing ? pawn.StockingUpOn(minifiedThing.InnerThing.def) : pawn.StockingUpOn(thing.def);
 
 		public static bool StockingUpOn(this Pawn pawn, ThingDef thingDef)
 		{
@@ -108,7 +109,7 @@ namespace SmartMedicine
 			return pawn.StockingUpOn(thingDef) ? pawn.StockUpSettings()[thingDef] : 0;
 		}
 
-		public static int StockUpNeeds(this Pawn pawn, Thing thing) => pawn.StockUpNeeds(thing.def);
+		public static int StockUpNeeds(this Pawn pawn, Thing thing) => thing is MinifiedThing minifiedThing ? pawn.StockUpNeeds(minifiedThing.InnerThing.def) : pawn.StockUpNeeds(thing.def);
 
 		public static int StockUpNeeds(this Pawn pawn, ThingDef thingDef)
 		{
@@ -138,7 +139,7 @@ namespace SmartMedicine
 		public static int HasItemCount(this Pawn pawn, ThingDef thingDef)
 		{
 			return pawn.inventory.innerContainer
-				.Where(t => t.def == thingDef)
+				.Where(t => (t is MinifiedThing minifiedThing ? minifiedThing.InnerThing.def : t.def) == thingDef)
 				.Select(t => t.stackCount)
 				.Aggregate(0, (a, b) => a + b);
 		}
@@ -147,7 +148,7 @@ namespace SmartMedicine
 		public static bool StockUpMissing(this Pawn pawn, ThingDef thingDef)
 		{
 			if (!pawn.StockingUpOn(thingDef) || pawn.StockUpCount(thingDef) == 0) return false;
-			return !pawn.inventory.innerContainer.Contains(thingDef);
+			return !(pawn.inventory.innerContainer.Contains(thingDef) || pawn.inventory.innerContainer.Any(y => y is MinifiedThing minifiedThing && minifiedThing.InnerThing.def == thingDef));
 		}
 
 		public static void StockUpStop(this Pawn pawn, Thing thing) => pawn.StockUpStop(thing.def);
@@ -183,6 +184,10 @@ namespace SmartMedicine
 
 			float stockUpCount = 0;
 			float available = map.resourceCounter.GetCount(thingDef);
+			if (thingDef.minifiedDef != null)
+				available += map.listerThings.GetThingsOfType<MinifiedThing>().Where(x => x.InnerThing.def == thingDef)
+					.Sum(x => x.stackCount);
+
 			foreach (Pawn p in map.mapPawns.FreeColonistsSpawned)
 			{
 				stockUpCount += p.StockUpCount(thingDef);

@@ -327,6 +327,8 @@ namespace SmartMedicine
 		private Vector2 scrollPosition = Vector2.zero;
 		private float scrollViewHeight;
 		private bool anything = false;
+		private bool useBedrollsInstalled = false;
+		private QuickSearchWidget search = new QuickSearchWidget();
 
 		public override Vector2 InitialSize
 		{
@@ -344,6 +346,8 @@ namespace SmartMedicine
 			doCloseX = true;
 			draggable = true;
 			preventCameraMotion = false;
+			useBedrollsInstalled =
+				ModLister.GetActiveModWithIdentifier("Memegoddess.UseBedrolls", ignorePostfix: true) != null;
 		}
 
 		public override void DoWindowContents(Rect inRect)
@@ -361,7 +365,6 @@ namespace SmartMedicine
 			GUI.color = Color.white;
 			Rect outRect = new Rect(0f, 0f, botRect.width, botRect.height);
 			Rect viewRect = new Rect(0f, 0f, botRect.width - 16f, this.scrollViewHeight);
-			Widgets.BeginScrollView(outRect, ref this.scrollPosition, viewRect);
 
 			float iconSize = Text.LineHeight * 2;
 
@@ -371,8 +374,19 @@ namespace SmartMedicine
 
 			List<ThingDef> stockable = DefDatabase<ThingDef>.AllDefsListForReading.FindAll(
 				t => t.EverHaulable &&
-				anything ||
-				(t.IsDrug || t.IsMedicine));
+				     anything ||
+				     (t.IsDrug || t.IsMedicine || t == ThingDefOf.HemogenPack ||
+				      (useBedrollsInstalled && t == ThingDefOf.Bedroll)));
+			if(anything)
+			{
+				var searchRect = new Rect(0f, 0f, viewRect.width, 24f);
+				search.OnGUI(searchRect);
+				stockable = stockable.Where(td => 
+					search.filter.Matches(td.LabelCap)).ToList();
+				y += 24f;
+			}
+			Widgets.BeginScrollView(outRect, ref this.scrollPosition, viewRect);
+
 			foreach (ThingDef td in stockable)
 			{
 				rowRect.x = x;
