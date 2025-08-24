@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Verse;
@@ -183,6 +184,12 @@ namespace SmartMedicine
 			if (enough == 0.0f) return true;
 
 			float stockUpCount = 0;
+
+			// Can't count how many meals are available for it
+			if (thingDef == ThingDefOf.MealNutrientPaste && map.listerThings
+				    .GetThingsOfType<Building_NutrientPasteDispenser>().Any(dispenser => dispenser.CanDispenseNow))
+				return true;
+
 			float available = map.resourceCounter.GetCount(thingDef);
 			if (thingDef.minifiedDef != null)
 				available += map.listerThings.GetThingsOfType<MinifiedThing>().Where(x => x.InnerThing.def == thingDef)
