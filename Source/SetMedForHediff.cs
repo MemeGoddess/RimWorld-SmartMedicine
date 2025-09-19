@@ -14,24 +14,40 @@ namespace SmartMedicine
 {
 	public class PriorityCareComp : GameComponent
 	{
-		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
+		// This is here to suppress an error
 		public PriorityCareComp(Game game)
 		{
+			
+		}
+	}
+
+	public class PriorityCareSettingsComp : GameComponent
+	{
+		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
+		private List<Hediff> hediffList;
+		private List<MedicalCareCategory> medCareList;
+		public PriorityCareSettingsComp(Game game)
+		{
 			hediffCare = new Dictionary<Hediff, MedicalCareCategory>();
+			hediffList = new List<Hediff>();
+			medCareList = new List<MedicalCareCategory>();
 		}
 
-		/*
-		 * Hediffs are not iloadreferenceable so this won't work:
+		
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Collections.Look(ref hediffCare, "hediffCare");
+			
+			Scribe_Collections.Look(ref hediffCare, "hediffCare", LookMode.Reference, LookMode.Value, ref hediffList,
+					ref medCareList);
+
+			hediffCare ??= new();
 		}
-		*/
+
 
 		public static Dictionary<Hediff, MedicalCareCategory> Get()
 		{
-			return Current.Game.GetComponent<PriorityCareComp>().hediffCare;
+			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
 		}
 
 		public static bool MaxPriorityCare(Pawn patient, out MedicalCareCategory care) => MaxPriorityCare(patient.health.hediffSet.hediffs, out care);
@@ -71,7 +87,7 @@ namespace SmartMedicine
 		public static void Prefix(Hediff __instance)
 		{
 			Log.Message($"removing {__instance} from priorityCare");
-			PriorityCareComp.Get().Remove(__instance);
+			PriorityCareSettingsComp.Get().Remove(__instance);
 		}
 	}
 	
@@ -134,7 +150,7 @@ namespace SmartMedicine
 		//public static Rect DrawElementStack<T>(Rect rect, float rowHeight, List<T> elements, StackElementDrawer<T> drawer, StackElementWidthGetter<T> widthGetter, float rowMargin = 4f, float elementMargin = 5f, bool allowOrderOptimization = true)
 		public static Rect DrawElementStack2(Rect rect, float rowHeight, List<GenUI.AnonymousStackElement> elements, GenUI.StackElementDrawer<GenUI.AnonymousStackElement> drawer, GenUI.StackElementWidthGetter<GenUI.AnonymousStackElement> widthGetter, float rowMargin, float elementMargin, bool allowOrderOptimization, Hediff hediff)
 		{
-			if (PriorityCareComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
+			if (PriorityCareSettingsComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
 			{
 				elements.Add(new GenUI.AnonymousStackElement
 				{
@@ -169,7 +185,7 @@ namespace SmartMedicine
 				//Default care
 				list.Add(new FloatMenuOption("TD.DefaultCare".Translate(), delegate
 				{
-					PriorityCareComp.Get().Remove(hediff);
+					PriorityCareSettingsComp.Get().Remove(hediff);
 				}));
 
 				for (int i = 0; i < 5; i++)
@@ -177,7 +193,7 @@ namespace SmartMedicine
 					MedicalCareCategory mc = (MedicalCareCategory)i;
 					list.Add(new FloatMenuOption(mc.GetLabel(), delegate
 					{
-						PriorityCareComp.Get()[hediff] = mc;
+						PriorityCareSettingsComp.Get()[hediff] = mc;
 					}));
 				}
 				Find.WindowStack.Add(new FloatMenu(list));
@@ -190,7 +206,7 @@ namespace SmartMedicine
 	{
 		public static bool Prefix(Hediff __instance, ref float __result)
 		{
-			if(PriorityCareComp.Get().TryGetValue(__instance, out MedicalCareCategory hediffCare))
+			if(PriorityCareSettingsComp.Get().TryGetValue(__instance, out MedicalCareCategory hediffCare))
 			{
 				MedicalCareCategory defaultCare = __instance.pawn.GetCare();
 
@@ -263,7 +279,7 @@ namespace SmartMedicine
 
 		public static bool AllowsMedicineForHediff(Pawn deliveree, ThingDef med)
 		{
-			if (PriorityCareComp.MaxPriorityCare(deliveree, out MedicalCareCategory heCare))
+			if (PriorityCareSettingsComp.MaxPriorityCare(deliveree, out MedicalCareCategory heCare))
 			{
 				//This is uses to allow higher medicine above normal limit below.
 				//this is NOT used to stop the job is PriorityCare is lowered
@@ -285,7 +301,7 @@ namespace SmartMedicine
 		{
 			if (ignoreTimer) return true;
 
-			if (PriorityCareComp.Get().TryGetValue(__instance, out MedicalCareCategory heCare) && heCare == MedicalCareCategory.NoCare)
+			if (PriorityCareSettingsComp.Get().TryGetValue(__instance, out MedicalCareCategory heCare) && heCare == MedicalCareCategory.NoCare)
 			{
 				__result = false;
 				return false;

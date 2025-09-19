@@ -81,12 +81,12 @@ namespace SmartMedicine
 		public static void FilterInjuriesForMedCount(List<Hediff> hediffs)
 		{
 			Log.Message($"Filtering ({hediffs.ToStringSafeEnumerable()})");
-			if (PriorityCareComp.MaxPriorityCare(hediffs, out MedicalCareCategory maxPriorityCare))
+			if (PriorityCareSettingsComp.MaxPriorityCare(hediffs, out MedicalCareCategory maxPriorityCare))
 			{
 				MedicalCareCategory defaultCare = hediffs.First().pawn.GetCare();
 
 				//ignore defaultCare if none uses default
-				if (PriorityCareComp.AllPriorityCare(hediffs))
+				if (PriorityCareSettingsComp.AllPriorityCare(hediffs))
 					defaultCare = maxPriorityCare;
 				
 				//Find highest care
@@ -97,7 +97,7 @@ namespace SmartMedicine
 				//Should check if medicine is available, but you just set to use it so this will assume you have it
 				hediffs.RemoveAll(delegate (Hediff h)
 				{
-					if (PriorityCareComp.Get().TryGetValue(h, out MedicalCareCategory heCare))
+					if (PriorityCareSettingsComp.Get().TryGetValue(h, out MedicalCareCategory heCare))
 					{
 						return heCare < highestCare;
 					}
@@ -381,7 +381,7 @@ namespace SmartMedicine
 
 			//Care setting
 			MedicalCareCategory finalCare = MedicalCareCategory.NoCare;
-			var hediffCare = PriorityCareComp.Get();
+			var hediffCare = PriorityCareSettingsComp.Get();
 			List<Hediff> hediffsToTend = HediffsToTend(patient);
 			Log.Message($"Tending ({hediffsToTend.ToStringSafeEnumerable()})");
 			foreach(Hediff h in hediffsToTend)

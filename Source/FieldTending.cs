@@ -52,7 +52,6 @@ namespace SmartMedicine
 		//public static bool GoodLayingStatusForTend(Pawn patient, Pawn doctor)
 		public static void Postfix(Pawn patient, ref bool __result)
 		{
-			if (!__result) Log.Message($"StatusFor {patient} is {__result}");
 			if (!__result && Mod.settings.FieldTendingActive(patient))
 				__result = (patient.GetPosture() != PawnPosture.Standing)
 					|| (patient.Drafted && patient.jobs.curDriver is JobDriver_Wait	//Tend while idle + drafted
