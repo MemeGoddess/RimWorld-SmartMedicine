@@ -19,6 +19,12 @@ namespace SmartMedicine
 		{
 			
 		}
+
+		// Reroute existing calls to use the new comp
+		public static Dictionary<Hediff, MedicalCareCategory> Get()
+		{
+			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
+		}
 	}
 
 	public class PriorityCareSettingsComp : GameComponent
