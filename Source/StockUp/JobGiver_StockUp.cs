@@ -40,6 +40,40 @@ namespace SmartMedicine
 			if (Skip(pawn))
 				return null;
 
+			var nutrientPasteStockUp = pawn.StockUpNeeds(ThingDefOf.MealNutrientPaste);
+			if (nutrientPasteStockUp > 0 &&
+			    StockUpUtility.EnoughAvailable(ThingDefOf.MealNutrientPaste, pawn.Map))
+			{
+				var dispensers = pawn.Map.listerThings.GetThingsOfType<Building_NutrientPasteDispenser>()
+					.Where(x => x.CanDispenseNow &&
+					            pawn.CanReach(new LocalTargetInfo(x.InteractionCell), PathEndMode.OnCell, Danger.None))
+					.OrderBy(x => pawn.Position.DistanceTo(x.InteractionCell))
+					.ToList();
+
+				if (dispensers.Any())
+				{
+					var selected = dispensers.FirstOrDefault();
+
+					var dispensed = 0;
+					Thing stack = null;
+					for (int i = 0; i < Math.Min(nutrientPasteStockUp, ThingDefOf.MealNutrientPaste.stackLimit); i++)
+					{
+						var meal = selected.TryDispenseFood();
+
+						if (meal == null)
+							break;
+
+						GenPlace.TryPlaceThing(meal, selected.InteractionCell, selected.Map, ThingPlaceMode.Near);
+
+						stack ??= meal;
+						dispensed++;
+					}
+
+					if (stack != null)
+						return new Job(SmartMedicineJobDefOf.StockUp, stack) { count = dispensed };
+				}
+			}
+
 			Log.Message($"any things?");
 			Predicate<Thing> validator = (Thing t) => pawn.StockingUpOn(t) && pawn.StockUpNeeds(t) > 0 && pawn.CanReserve(t, FindBestMedicine.maxPawns, 1) && !t.IsForbidden(pawn);
 			Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999, validator);
