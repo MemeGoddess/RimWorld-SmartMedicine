@@ -6,8 +6,6 @@ using RimWorld;
 using Verse;
 using Verse.AI;
 using HarmonyLib;
-using System.Reflection.Emit;
-using System.Reflection;
 
 namespace SmartMedicine
 {
@@ -116,76 +114,6 @@ namespace SmartMedicine
 						pawn.inventory.innerContainer.TryAddOrTransfer(pawn.carryTracker.CarriedThing);
 				}
 			}
-		}
-	}
-
-	[HarmonyPatch]
-	public static class DontUnloadAfterArriving_Patch
-	{
-		static MethodBase TargetMethod()
-		{
-			var prop = AccessTools.Property(typeof(Pawn_InventoryTracker), "FirstUnloadableThing");
-			return prop?.GetGetMethod(nonPublic: true) ?? prop?.GetGetMethod();
-		}
-
-		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il)
-		{
-			var list = instructions.ToList();
-
-			var tmpField = AccessTools.Field(typeof(Pawn_InventoryTracker), "tmpItemsToKeep");
-
-			var clearMi = AccessTools.Method(typeof(List<ThingDefCount>), nameof(List<ThingDefCount>.Clear));
-
-			var hookMi = AccessTools.Method(typeof(DontUnloadAfterArriving_Patch), nameof(InjectStockUpSettings));
-
-			// Sanity checks
-			if (tmpField == null || clearMi == null || hookMi == null)
-			{
-				Verse.Log.Error("Failed to find all fields/methods to patch Caravan Unloading");
-				foreach (var ci in list) yield return ci;
-				yield break;
-			}
-
-			bool injected = false;
-
-			for (int i = 0; i < list.Count; i++)
-			{
-				var ci = list[i];
-				yield return ci;
-
-				// If clearing
-				if (!injected
-						&& ci.opcode == OpCodes.Callvirt
-						&& ci.operand is MethodInfo mi
-						&& mi == clearMi
-						&& i > 0
-						&& list[i - 1].opcode == OpCodes.Ldsfld
-						&& Equals(list[i - 1].operand, tmpField))
-				{
-					// Do 
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Call, hookMi);
-
-					injected = true;
-			}
-			}
-
-			if (!injected)
-			{
-				Verse.Log.Warning("DontUnloadAfterArriving_Patch did not find tmpItemsToKeep.Clear() to inject after");
-			}
-		}
-
-		public static void InjectStockUpSettings(Pawn_InventoryTracker __instance)
-		{
-				var pawn = __instance?.pawn;
-				if (pawn == null) return;
-
-
-				var tmpRef = AccessTools.StaticFieldRefAccess<List<ThingDefCount>>(typeof(Pawn_InventoryTracker), "tmpItemsToKeep");
-
-				foreach (var tdc in pawn.StockUpSettings())
-					tmpRef.Add(new ThingDefCount(tdc.Key, tdc.Value));
 		}
 	}
 }
