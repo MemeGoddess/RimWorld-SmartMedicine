@@ -32,6 +32,7 @@ namespace SmartMedicine
 					job.countQueue = meds.Skip(1).Select(med => med.Count).ToList();
 				}
 				__result = job;
+				
 			}
 			else
 				__result = JobMaker.MakeJob(JobDefOf.TendPatient, patient);
@@ -335,6 +336,7 @@ namespace SmartMedicine
 		public static Type extMechanicalPawn;
 		public static Type extRepair;
 
+
 		static FindBestMedicine()
 		{
 			IEnumerable<float> medQualities = DefDatabase<ThingDef>.AllDefs
@@ -393,6 +395,14 @@ namespace SmartMedicine
 				finalCare = toUse > finalCare ? toUse : finalCare;
 			}
 			Log.Message($"Care for {patient} is {defaultCare}, Custom care = {finalCare}");
+
+			if (defaultCare < finalCare)
+			{
+				Log.Message("Pawn Allowed Care is lower than hediff care! Elevating Allowed Care as workaround");
+				var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
+				defaultCareFix.AddWithExpiry(patient, patient.playerSettings.medCare);
+				patient.playerSettings.medCare = finalCare;
+			}
 
 			//Android Droid support;
 			Predicate<Thing> validatorDroid = t => true;
@@ -539,6 +549,8 @@ namespace SmartMedicine
 					}
 				}
 			}
+
+			//patient.playerSettings.medCare = originalCare;
 			return result;
 		}
 
