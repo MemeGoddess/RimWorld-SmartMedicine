@@ -82,16 +82,33 @@ namespace SmartMedicine
 		public static void FilterInjuriesForMedCount(List<Hediff> hediffs)
 		{
 			Log.Message($"Filtering ({hediffs.ToStringSafeEnumerable()})");
+			var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
+
 			if (PriorityCareSettingsComp.MaxPriorityCare(hediffs, out MedicalCareCategory maxPriorityCare))
-			{
-				MedicalCareCategory defaultCare = hediffs.First().pawn.GetCare();
+			{ 
+				var pawn = hediffs.First().pawn;
+				MedicalCareCategory defaultCare = pawn.GetCare();
+
+				if (maxPriorityCare > defaultCare)
+				{
+					Log.Message("Pawn Allowed Care is lower than hediff care! Elevating Allowed Care as workaround");
+					defaultCareFix.AddWithExpiry(pawn, pawn.playerSettings.medCare);
+					pawn.playerSettings.medCare = maxPriorityCare;
+				}
 
 				//ignore defaultCare if none uses default
 				if (PriorityCareSettingsComp.AllPriorityCare(hediffs))
 					defaultCare = maxPriorityCare;
 				
 				//Find highest care
-				MedicalCareCategory highestCare = defaultCare > maxPriorityCare ? defaultCare : maxPriorityCare;
+				var chosenCare = defaultCare;
+
+				var originalCare = defaultCareFix.GetOriginalCare(pawn);
+				var flippedCustom = originalCare != null;
+				if (flippedCustom)
+					chosenCare = originalCare.Value;
+
+				MedicalCareCategory highestCare = chosenCare > maxPriorityCare ? chosenCare : maxPriorityCare;
 				Log.Message($"maxPriorityCare is {maxPriorityCare}, defaultCare is {defaultCare}, highestCare is {highestCare}");
 
 				//remove anything less than that
@@ -102,7 +119,8 @@ namespace SmartMedicine
 					{
 						return heCare < highestCare;
 					}
-					return defaultCare < highestCare;
+					// Want to remove all non-customCared if defaultCareFix is running. Otherwise it'll use glitter for everything.
+					return flippedCustom || defaultCare < highestCare;
 				});
 			}
 
@@ -366,7 +384,7 @@ namespace SmartMedicine
 		// onlyUseInventory is only set true for drafted jobs - ie when the job.draftedTend is true
 		public static List<ThingCount> Find(Pawn healer, Pawn patient, out int totalCount, bool onlyUseInventory)
 		{
-			totalCount = 0;
+ 			totalCount = 0;
 			Log.Message($"{healer} is tending to {patient}");
 
 			float sufficientQuality = maxMedicineQuality + 1; // nothing is sufficient!
@@ -380,6 +398,11 @@ namespace SmartMedicine
 			}
 
 			MedicalCareCategory defaultCare = patient.GetCare();
+
+			var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
+			var originalCare = defaultCareFix.GetOriginalCare(patient);
+			if (originalCare != null)
+				defaultCare = originalCare.Value;
 
 			//Care setting
 			MedicalCareCategory finalCare = MedicalCareCategory.NoCare;
@@ -396,13 +419,10 @@ namespace SmartMedicine
 			}
 			Log.Message($"Care for {patient} is {defaultCare}, Custom care = {finalCare}");
 
-			if (defaultCare < finalCare)
-			{
-				Log.Message("Pawn Allowed Care is lower than hediff care! Elevating Allowed Care as workaround");
-				var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
-				defaultCareFix.AddWithExpiry(patient, patient.playerSettings.medCare);
-				patient.playerSettings.medCare = finalCare;
-			}
+			//if (defaultCare < finalCare)
+			//{
+ 				
+			//}
 
 			//Android Droid support;
 			Predicate<Thing> validatorDroid = t => true;

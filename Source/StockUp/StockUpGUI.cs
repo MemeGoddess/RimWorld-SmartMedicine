@@ -107,8 +107,11 @@ namespace SmartMedicine
 
 			string addedText = String.Format(" / {0}", pawn.StockUpCount(thingDef));
 
-			if (pawn.StockUpWants(thingDef) > 0 && !StockUpUtility.EnoughAvailable(thingDef, pawn.Map))
-				addedText += " (" + "TD.Paused".Translate() + ")";
+			if (pawn.StockUpWants(thingDef) > 0)
+			{
+				if (!StockUpUtility.EnoughAvailable(thingDef, pawn.Map)) addedText += " (" + "TD.Paused".Translate() + ")";
+				else if (MassUtility.FreeSpace(pawn) < thingDef.BaseMass) addedText += " (" + "TD.Encumbered".Translate() + ")";
+			}
 
 			return text + addedText;
 		}

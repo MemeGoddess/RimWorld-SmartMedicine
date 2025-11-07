@@ -76,7 +76,24 @@ namespace SmartMedicine
 			patient.playerSettings.medCare = care;
 
 			gameComponent.OriginalCare.Remove(patient);
-	}
+		}
+
+		public MedicalCareCategory? GetOriginalCare(Pawn patient)
+		{
+			if (patient == null)
+				return null;
+
+			var gameComponent = Current.Game.GetComponent<DefaultCareFix>();
+
+			if (!gameComponent.OriginalCare.ContainsKey(patient))
+				return null;
+
+			gameComponent.OriginalCare.TryGetValue(patient, out var care);
+			
+			return care;
+
+
+		}
 
 		public override void ExposeData()
 		{

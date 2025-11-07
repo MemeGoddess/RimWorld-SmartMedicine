@@ -35,6 +35,7 @@
 	<TD.SettingStockUpEnoughDesc>For example, at 150%, Stockpiles need to have enough for everyone to stock up to 100%, plus 50% extra</TD.SettingStockUpEnoughDesc>
 	<TD.SettingStockUpReturn>Return items if not enough available</TD.SettingStockUpReturn>
 	<TD.Paused>Paused</TD.Paused>
+	<TD.Encumbered>Encumbered</TD.Encumbered>
 	<TD.NotEnoughStockUp>Not enough available to stock up</TD.NotEnoughStockUp>
 	<TD.SettingGlobalSurgeryUnlimited>Default medical settings for a new game have 'surgery use best' checked</TD.SettingGlobalSurgeryUnlimited>
 	<TD.SettingGlobalSurgeryUnlimitedDesc>During a game, this setting is not used - the default for new colonists is alongside the other medical defaults accessible in the Health tab</TD.SettingGlobalSurgeryUnlimitedDesc>
