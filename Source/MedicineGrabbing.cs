@@ -437,7 +437,7 @@ namespace SmartMedicine
 			List<MedicineEvaluator> allMeds = new List<MedicineEvaluator>();
 
 			Predicate<Thing> validatorMed = t => finalCare.AllowsMedicine(t.def) && validatorDroid(t);
-			Map map = patient.Map;
+			Map map = patient.Map ?? healer.Map; // WHY ON EARTH CAN ANOMALY PAWNS HAVE A NULL MAP? >:(
 			TraverseParms traverseParams = TraverseParms.For(healer, Danger.Deadly, TraverseMode.ByPawn, false);
 
 			//Ground
