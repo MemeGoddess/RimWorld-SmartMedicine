@@ -155,19 +155,19 @@ namespace SmartMedicine
 
 				// If clearing
 				if (!injected
-						&& ci.opcode == OpCodes.Callvirt
-						&& ci.operand is MethodInfo mi
-						&& mi == clearMi
-						&& i > 0
-						&& list[i - 1].opcode == OpCodes.Ldsfld
-						&& Equals(list[i - 1].operand, tmpField))
+				    && ci.opcode == OpCodes.Callvirt
+				    && ci.operand is MethodInfo mi
+				    && mi == clearMi
+				    && i > 0
+				    && list[i - 1].opcode == OpCodes.Ldsfld
+				    && Equals(list[i - 1].operand, tmpField))
 				{
 					// Do 
 					yield return new CodeInstruction(OpCodes.Ldarg_0);
 					yield return new CodeInstruction(OpCodes.Call, hookMi);
 
 					injected = true;
-			}
+				}
 			}
 
 			if (!injected)
@@ -176,16 +176,15 @@ namespace SmartMedicine
 			}
 		}
 
+		private static List<ThingDefCount> tmpRef;
 		public static void InjectStockUpSettings(Pawn_InventoryTracker __instance)
 		{
-				var pawn = __instance?.pawn;
-				if (pawn == null) return;
+			var pawn = __instance?.pawn;
+			if (pawn == null) return;
 
+			tmpRef ??= AccessTools.StaticFieldRefAccess<List<ThingDefCount>>(typeof(Pawn_InventoryTracker), "tmpItemsToKeep");
 
-				var tmpRef = AccessTools.StaticFieldRefAccess<List<ThingDefCount>>(typeof(Pawn_InventoryTracker), "tmpItemsToKeep");
-
-				foreach (var tdc in pawn.StockUpSettings())
-					tmpRef.Add(new ThingDefCount(tdc.Key, tdc.Value));
+			tmpRef.AddRange(pawn.StockUpSettingsAsCounts());
 		}
 	}
 }

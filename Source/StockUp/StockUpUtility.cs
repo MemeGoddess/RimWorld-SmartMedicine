@@ -46,12 +46,36 @@ namespace SmartMedicine
 	[StaticConstructorOnStartup]
 	public static class StockUpUtility
 	{
+		private static int _cacheExpire = -1;
+		private static Dictionary<Pawn, List<ThingDefCount>> _cache = new();
 		public static Dictionary<ThingDef, int> StockUpSettings(this Pawn pawn)
 		{
 			var settings = SmartMedicineGameComp.Settings();
 			if (!settings.TryGetValue(pawn, out ExDictionary<ThingDef, int> pawnSettings))
 				settings[pawn] = pawnSettings = new ExDictionary<ThingDef, int>();
 			return pawnSettings;
+		}
+
+		public static List<ThingDefCount> StockUpSettingsAsCounts(this Pawn pawn)
+		{
+			var tick = Find.TickManager.TicksGame;
+			if(tick > _cacheExpire)
+			{
+				_cache.Clear();
+				_cacheExpire = -1;
+				Log.Message("Cache cleared");
+			}
+
+			if (_cache.TryGetValue(pawn, out var list))
+				return list;
+
+			list = pawn.StockUpSettings().Select(x => new ThingDefCount(x.Key, x.Value)).ToList();
+			_cache[pawn] = list;
+
+			if (_cacheExpire == -1)
+				_cacheExpire = tick + 625; // 15 minutes in game.
+
+			return list;
 		}
 
 		public static void StockUpCopySettings(this Pawn pawn)
