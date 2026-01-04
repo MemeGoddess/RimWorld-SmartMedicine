@@ -218,12 +218,12 @@ namespace SmartMedicine
 			if (medicineToUse.holdingOwner.Owner is Pawn_InventoryTracker holder)
 			{
 				Log.Message($"{holder.pawn} dropping {medicineToUse}x{needCount}");
-				holder.innerContainer.TryDrop(medicineToUse, ThingPlaceMode.Direct, needCount, out droppedMedicine);
+				holder.innerContainer.TryDrop(medicineToUse, ThingPlaceMode.Near, needCount, out droppedMedicine);
 			}
 			else if (medicineToUse.holdingOwner.Owner is Pawn_CarryTracker carrier)
 			{
 				Log.Message($"{carrier.pawn} dropping carried {medicineToUse}x{needCount}");
-				carrier.innerContainer.TryDrop(medicineToUse, ThingPlaceMode.Direct, needCount, out droppedMedicine);
+				carrier.innerContainer.TryDrop(medicineToUse, ThingPlaceMode.Near, needCount, out droppedMedicine);
 			}
 
 			if (droppedMedicine != null)
