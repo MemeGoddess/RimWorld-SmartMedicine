@@ -384,8 +384,12 @@ namespace SmartMedicine
 			{
 				stockable = stockable.Where(td => 
 					search.filter.Matches(td.LabelCap)).ToList();
-				outRect.y += 24f;
+				outRect.y += 34f;
+
+				var searchRect = new Rect(0f, 5f, botRect.width, 24f);
+				search.OnGUI(searchRect);
 			}
+
 			Widgets.BeginScrollView(outRect, ref this.scrollPosition, viewRect);
 
 			foreach (ThingDef td in stockable)
@@ -437,12 +441,6 @@ namespace SmartMedicine
 				scrollViewHeight = y + rowRect.height;
 			}
 			Widgets.EndScrollView();
-
-			if(anything)
-			{
-				var searchRect = new Rect(0f, 0f, viewRect.width, 24f);
-				search.OnGUI(searchRect);
-			}
 			Widgets.EndGroup();
 			GUI.color = Color.white;
 			Text.Anchor = TextAnchor.UpperLeft;
