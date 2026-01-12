@@ -38,7 +38,7 @@ namespace SmartMedicine
 			);
 
 			if (matcher.IsInvalid)
-				throw new Exception("Unable to find entrypoint");
+				throw new Exception($"Unable to find entrypoint for {nameof(DamageHediffs)}");
 
 			matcher.Insert(
 				new CodeInstruction(OpCodes.Call, GetList),
@@ -89,7 +89,7 @@ namespace SmartMedicine
 			);
 
 			if (matcher.IsInvalid)
-				throw new Exception("Unable to find entrypoint");
+				throw new Exception($"Unable to find entrypoint for {nameof(InfectionHediffs)}");
 
 			matcher.Insert(
 				new CodeInstruction(OpCodes.Call, GetList),
