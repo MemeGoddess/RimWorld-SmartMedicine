@@ -141,6 +141,8 @@ namespace SmartMedicine
 		private static readonly MethodInfo ElementsAdd = AccessTools.Method(typeof(List<GenUI.AnonymousStackElement>),
 			nameof(List<GenUI.AnonymousStackElement>.Add));
 
+		private static readonly FieldInfo LastMaxIconsTotalWidth =
+			AccessTools.Field(typeof(HealthCardUtility), "lastMaxIconsTotalWidth");
 		private static readonly MethodInfo ButtonInvis = AccessTools.Method(typeof(Widgets), nameof(Widgets.ButtonInvisible));
 		private static readonly MethodInfo HediffTendableNow = AccessTools.Method(typeof(Hediff), nameof(Hediff.TendableNow));
 		private static readonly MethodInfo Button = AccessTools.PropertyGetter(typeof(Event), nameof(Event.button));
@@ -239,7 +241,42 @@ namespace SmartMedicine
 			).ThrowIfInvalid("Instructions invalid after inserting call for drawing icons on Hediff row");
 			#endregion
 
+			#region Fix Highlight
 
+			var highlightRect = il.DeclareLocal(typeof(Rect));
+			matcher.Start();
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, DrawHighlightIfMouseover))
+				.ThrowIfInvalid("Unable to find DrawHighlightIfMouseover for Highlight fix");
+
+			matcher.MatchStartBackwards(new CodeMatch(x =>
+				x.IsLdloc() && x.operand is LocalBuilder lb && lb.LocalType == typeof(Rect)))
+				.ThrowIfInvalid("Unable to find Rect for Highlight fix");
+
+			var rectIndex = (matcher.Instruction.operand as LocalBuilder)!.LocalIndex;
+			matcher.RemoveInstruction();
+			var endPos = matcher.Pos - 1;
+
+			matcher.MatchStartBackwards(new CodeMatch(x => x.IsLdloc() && x.LocalIndex() == rectIndex));
+			matcher.Advance();
+			var startPos = matcher.Pos;
+
+			var newRectInstructions = matcher.InstructionsInRange(startPos, endPos);
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, DrawHighlightIfMouseover))
+				.ThrowIfInvalid("Unable to find DrawHighlightIfMouseover after clean for Highlight fix");
+
+
+			matcher.InsertAndAdvance(new CodeInstruction(OpCodes.Ldloca, highlightRect));
+			matcher.InsertAndAdvance(newRectInstructions);
+			matcher.InsertAndAdvance(new CodeInstruction(OpCodes.Ldloc, highlightRect));
+
+			matcher.Advance(-4);
+			matcher.InsertAfter(
+				new CodeInstruction(OpCodes.Ldsfld, LastMaxIconsTotalWidth),
+				new CodeInstruction(OpCodes.Add)
+			).ThrowIfInvalid("Instructions invalid after creating new rect for Highlight fix");
+
+
+			#endregion
 
 			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
 			return matcher.Instructions();
