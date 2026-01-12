@@ -32,11 +32,15 @@ namespace SmartMedicine
 		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
 		private List<Hediff> hediffList;
 		private List<MedicalCareCategory> medCareList;
+
+		public HashSet<Hediff> ignoredHediffs;
 		public PriorityCareSettingsComp(Game game)
 		{
-			hediffCare = new Dictionary<Hediff, MedicalCareCategory>();
-			hediffList = new List<Hediff>();
-			medCareList = new List<MedicalCareCategory>();
+			hediffCare = new();
+			hediffList = [];
+			medCareList = [];
+
+			ignoredHediffs = new();
 		}
 
 		
@@ -47,13 +51,22 @@ namespace SmartMedicine
 			Scribe_Collections.Look(ref hediffCare, "hediffCare", LookMode.Reference, LookMode.Value, ref hediffList,
 					ref medCareList);
 
+			Scribe_Collections.Look(ref ignoredHediffs, "ignoredHediffs", LookMode.Reference);
+
 			hediffCare ??= new();
+			ignoredHediffs ??= new();
 		}
 
 
 		public static Dictionary<Hediff, MedicalCareCategory> Get()
 		{
 			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
+		}
+
+		public static HashSet<Hediff> GetIgnore()
+		{
+			var test = Current.Game.GetComponent<PriorityCareSettingsComp>().ignoredHediffs;
+			return test;
 		}
 
 		public static bool MaxPriorityCare(Pawn patient, out MedicalCareCategory care) => MaxPriorityCare(patient.health.hediffSet.hediffs, out care);
@@ -153,7 +166,6 @@ namespace SmartMedicine
 
 			}
 		}
-		//public static Rect DrawElementStack<T>(Rect rect, float rowHeight, List<T> elements, StackElementDrawer<T> drawer, StackElementWidthGetter<T> widthGetter, float rowMargin = 4f, float elementMargin = 5f, bool allowOrderOptimization = true)
 		public static Rect DrawElementStack2(Rect rect, float rowHeight, List<GenUI.AnonymousStackElement> elements, GenUI.StackElementDrawer<GenUI.AnonymousStackElement> drawer, GenUI.StackElementWidthGetter<GenUI.AnonymousStackElement> widthGetter, float rowMargin, float elementMargin, bool allowOrderOptimization, Hediff hediff)
 		{
 			if (PriorityCareSettingsComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
@@ -162,7 +174,8 @@ namespace SmartMedicine
 				{
 					drawer = delegate (Rect r)
 					{
-						Texture2D tex = careTextures()[(int)heCare];
+						loadedCareTextures ??= careTextures();
+						Texture2D tex = loadedCareTextures[(int)heCare];
 						r = new Rect(2 * rect.x + rect.width - r.x - 20f, r.y, 20f, 20f);
 						GUI.DrawTexture(r, tex);
 					},
@@ -173,9 +186,10 @@ namespace SmartMedicine
 		}
 
 
-		//private static Texture2D[] careTextures;
 		private static AccessTools.FieldRef<Texture2D[]> careTextures =
 			AccessTools.StaticFieldRefAccess< Texture2D[]>(AccessTools.Field( typeof(MedicalCareUtility), "careTextures"));
+
+		private static Texture2D[] loadedCareTextures;
 
 		public static void DrawHediffCare(Hediff hediff, ref Rect iconRect)
 		{
@@ -184,26 +198,34 @@ namespace SmartMedicine
 		public static void LabelButton(Rect rect, string text,  Hediff hediff)
 		{
 			Widgets.Label(rect, text);
-			if (hediff.TendableNow(true) && Event.current.button == 1 && Widgets.ButtonInvisible(rect))
-			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
+			if (!hediff.TendableNow(true) || Event.current.button != 1 || !Widgets.ButtonInvisible(rect))
+				return;
 
+			loadedCareTextures ??= careTextures();
+			var set = PriorityCareSettingsComp.GetIgnore();
+			var list = new List<FloatMenuOption>
+			{
+				new(PatientBedRestDefOf.PatientBedRest.labelShort.CapitalizeFirst(), delegate
+				{
+					if (!set.Add(hediff))
+						set.Remove(hediff);
+				}, set.Contains(hediff) ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex, new Color(1, 1, 1, 0.5f)),
 				//Default care
-				list.Add(new FloatMenuOption("TD.DefaultCare".Translate(), delegate
+				new("TD.DefaultCare".Translate(), delegate
 				{
 					PriorityCareSettingsComp.Get().Remove(hediff);
-				}));
+				}, iconTex: loadedCareTextures[(int)hediff.pawn.playerSettings.medCare], new Color(1, 1, 1, 0.5f))
+			};
 
-				for (int i = 0; i < 5; i++)
+			for (var i = 0; i < 5; i++)
+			{
+				var mc = (MedicalCareCategory)i;
+				list.Add(new FloatMenuOption(mc.GetLabel().CapitalizeFirst(), delegate
 				{
-					MedicalCareCategory mc = (MedicalCareCategory)i;
-					list.Add(new FloatMenuOption(mc.GetLabel(), delegate
-					{
-						PriorityCareSettingsComp.Get()[hediff] = mc;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+					PriorityCareSettingsComp.Get()[hediff] = mc;
+				}, loadedCareTextures[(int)mc], Color.white));
 			}
+			Find.WindowStack.Add(new FloatMenu(list));
 		}
 	}
 
@@ -314,5 +336,11 @@ namespace SmartMedicine
 			}
 			return true;
 		}
+	}
+
+	[DefOf]
+	public static class PatientBedRestDefOf
+	{
+		public static WorkTypeDef PatientBedRest;
 	}
 }
