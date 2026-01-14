@@ -132,6 +132,42 @@ namespace SmartMedicine
 			return matcher.Instructions();
 		}
 
+		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasNaturallyHealingInjury))]
+		[HarmonyTranspiler]
+		public static IEnumerable<CodeInstruction> AlertFix(IEnumerable<CodeInstruction> instructions,
+			ILGenerator il)
+		{
+			var list = il.DeclareLocal(typeof(HashSet<Hediff>));
+			var matcher = new CodeMatcher(instructions);
 
+			matcher.MatchEndForward(
+				new CodeMatch(OpCodes.Ldc_I4_0),
+				new CodeMatch(x => x.IsStloc()),
+				new CodeMatch(OpCodes.Br_S)
+			).ThrowIfInvalid($"Unable to find entrypoint for {nameof(DamageHediffs)}");
+
+			matcher.Insert(
+				new CodeInstruction(OpCodes.Call, GetList),
+				new CodeInstruction(OpCodes.Stloc, list)
+			);
+
+			matcher.MatchEndForward(
+				new CodeMatch(OpCodes.Isinst),
+				new CodeMatch(x => x.IsStloc()),
+				new CodeMatch(x => x.IsLdloc()),
+				new CodeMatch(OpCodes.Brfalse_S)
+			);
+			var skip = matcher.Instruction.Clone().operand;
+			var load = matcher.InstructionAt(-1).Clone();
+			matcher.InsertAfter(
+				new CodeInstruction(OpCodes.Ldloc, list),
+				load,
+				new CodeInstruction(OpCodes.Callvirt, Contains),
+				new CodeInstruction(OpCodes.Brtrue_S, skip)
+			);
+
+			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
+			return matcher.Instructions();
+		}
 	}
 }
