@@ -144,9 +144,9 @@ namespace SmartMedicine
 		private static readonly FieldInfo LastMaxIconsTotalWidth =
 			AccessTools.Field(typeof(HealthCardUtility), "lastMaxIconsTotalWidth");
 		private static readonly MethodInfo ButtonInvis = AccessTools.Method(typeof(Widgets), nameof(Widgets.ButtonInvisible));
-		private static readonly MethodInfo HediffTendableNow = AccessTools.Method(typeof(Hediff), nameof(Hediff.TendableNow));
+		public static readonly MethodInfo HediffTendableNow = AccessTools.Method(typeof(Hediff), nameof(Hediff.TendableNow));
 		private static readonly MethodInfo Button = AccessTools.PropertyGetter(typeof(Event), nameof(Event.button));
-		private static readonly MethodInfo CreateMenu = AccessTools.Method(typeof(HediffRowPriorityCare), nameof(LabelButton));
+		private static readonly MethodInfo CreateMenu = AccessTools.Method(typeof(HediffRowPriorityCare), nameof(CreateCareMenu));
 
 		private static readonly MethodInfo CreateElement =
 			AccessTools.Method(typeof(HediffRowPriorityCare), nameof(AddElements));
@@ -229,6 +229,10 @@ namespace SmartMedicine
 
 			matcher.MatchStartBackwards(new CodeMatch(OpCodes.Callvirt, ElementsAdd))
 				.ThrowIfInvalid("Unable to find hook for drawing icons on Hediff row");
+			var nextOp = matcher.InstructionAt(1);
+			var labels = nextOp.labels.ToList();
+			nextOp.labels.Clear();
+			rectLoad.FirstOrDefault()!.labels.AddRange(labels);
 
 			matcher.InsertAfter(
 				new List<CodeInstruction>(rectLoad)
@@ -278,10 +282,10 @@ namespace SmartMedicine
 
 			#endregion
 
+			var debug2 = string.Join("\n", instructions.Select(x => x.ToString()));
 			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
 			return matcher.Instructions();
 		}
-
 
 		public static List<GenUI.AnonymousStackElement> AddElements(Rect rect, List<GenUI.AnonymousStackElement> elements, Hediff hediff)
 		{
@@ -325,7 +329,13 @@ namespace SmartMedicine
 
 		private static Texture2D[] loadedCareTextures;
 
-		public static void LabelButton(Hediff hediff)
+		public static void CreateCareMenu(Hediff hediff)
+		{
+			// This makes patches and compat easier to handle.
+			Find.WindowStack.Add(new FloatMenu(CreateCareMenuOptions(hediff)));
+		}
+
+		public static List<FloatMenuOption> CreateCareMenuOptions(Hediff hediff)
 		{
 			loadedCareTextures ??= careTextures();
 			var set = PriorityCareSettingsComp.GetIgnore();
@@ -352,9 +362,10 @@ namespace SmartMedicine
 				}, loadedCareTextures[(int)mc], Color.white));
 			}
 
-			Find.WindowStack.Add(new FloatMenu(list));
+			return list;
 		}
 	}
+
 
 	[HarmonyPatch(typeof(Hediff), "TendPriority", MethodType.Getter)]
 	public static class PriorityHediff
