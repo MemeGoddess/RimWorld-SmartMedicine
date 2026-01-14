@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
+using RimWorld;
 using Verse;
 
 namespace SmartMedicine
@@ -22,8 +23,33 @@ namespace SmartMedicine
 		private static readonly MethodInfo FullyImmune =
 			AccessTools.Method(typeof(HediffUtility), nameof(HediffUtility.FullyImmune));
 
-		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasTendedAndHealingInjury))]
+		private static readonly FieldInfo SkipStatusField =
+			AccessTools.Field(typeof(IgnoreHediffsForRest), nameof(SkipStatus));
 
+		private static PatchStatus SkipStatus = PatchStatus.None;
+
+		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasTendedAndHealingInjury))]
+		[HarmonyPrefix]
+		public static void EnableSkip() => SkipStatus = SkipStatus == PatchStatus.HealthTracker 
+			? PatchStatus.HealthTracker 
+			: PatchStatus.Job;
+
+		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasTendedAndHealingInjury))]
+		[HarmonyPostfix]
+		public static void DisableSkip() => SkipStatus = SkipStatus == PatchStatus.HealthTracker 
+			? PatchStatus.HealthTracker 
+			: PatchStatus.None;
+
+		[HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.HealthTickInterval))]
+		[HarmonyPrefix]
+		public static void PreventSkip() => SkipStatus = PatchStatus.HealthTracker;
+
+		[HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.HealthTickInterval))]
+		[HarmonyPostfix]
+		public static void AllowSkip() => SkipStatus = PatchStatus.None;
+
+
+		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasTendedAndHealingInjury))]
 		[HarmonyTranspiler]
 		public static IEnumerable<CodeInstruction> DamageHediffs(IEnumerable<CodeInstruction> instructions, ILGenerator il)
 		{
@@ -61,8 +87,14 @@ namespace SmartMedicine
 			hediffLoad.labels.Clear();
 
 			var skip = (Label)matcher.InstructionAt(-1).Clone().operand;
+			var disable = il.DefineLabel();
+			matcher.Instruction.labels.Add(disable);
 
 			matcher.Insert(
+				new CodeInstruction(OpCodes.Ldsfld, SkipStatusField),
+				new CodeInstruction(OpCodes.Ldc_I4_1),
+				new CodeInstruction(OpCodes.Ceq),
+				new CodeInstruction(OpCodes.Brfalse_S, disable),
 				new CodeInstruction(OpCodes.Ldloc, list),
 				hediffLoad,
 				new CodeInstruction(OpCodes.Callvirt, Contains),
@@ -131,43 +163,12 @@ namespace SmartMedicine
 
 			return matcher.Instructions();
 		}
+	}
 
-		[HarmonyPatch(typeof(HediffSet), nameof(HediffSet.HasNaturallyHealingInjury))]
-		[HarmonyTranspiler]
-		public static IEnumerable<CodeInstruction> AlertFix(IEnumerable<CodeInstruction> instructions,
-			ILGenerator il)
-		{
-			var list = il.DeclareLocal(typeof(HashSet<Hediff>));
-			var matcher = new CodeMatcher(instructions);
-
-			matcher.MatchEndForward(
-				new CodeMatch(OpCodes.Ldc_I4_0),
-				new CodeMatch(x => x.IsStloc()),
-				new CodeMatch(OpCodes.Br_S)
-			).ThrowIfInvalid($"Unable to find entrypoint for {nameof(DamageHediffs)}");
-
-			matcher.Insert(
-				new CodeInstruction(OpCodes.Call, GetList),
-				new CodeInstruction(OpCodes.Stloc, list)
-			);
-
-			matcher.MatchEndForward(
-				new CodeMatch(OpCodes.Isinst),
-				new CodeMatch(x => x.IsStloc()),
-				new CodeMatch(x => x.IsLdloc()),
-				new CodeMatch(OpCodes.Brfalse_S)
-			);
-			var skip = matcher.Instruction.Clone().operand;
-			var load = matcher.InstructionAt(-1).Clone();
-			matcher.InsertAfter(
-				new CodeInstruction(OpCodes.Ldloc, list),
-				load,
-				new CodeInstruction(OpCodes.Callvirt, Contains),
-				new CodeInstruction(OpCodes.Brtrue_S, skip)
-			);
-
-			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
-			return matcher.Instructions();
-		}
+	public enum PatchStatus
+	{
+		None = 0,
+		Job = 1,
+		HealthTracker = 2
 	}
 }
