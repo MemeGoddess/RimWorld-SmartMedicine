@@ -338,14 +338,20 @@ namespace SmartMedicine
 		public static List<FloatMenuOption> CreateCareMenuOptions(Hediff hediff)
 		{
 			loadedCareTextures ??= careTextures();
+			var affectedHediffs = 
+				hediff.pawn.health.hediffSet.hediffs
+				.Where(x => x.UIGroupKey == hediff.UIGroupKey)
+				.ToList();
 			var set = PriorityCareSettingsComp.GetIgnore();
 
 			var list = new List<FloatMenuOption>
 			{
 				new(PatientBedRestDefOf.PatientBedRest.labelShort.CapitalizeFirst(), delegate
 				{
-					if (!set.Add(hediff))
-						set.Remove(hediff);
+					if (!set.Add(hediff)) 
+						set.RemoveWhere(x => affectedHediffs.Contains(x));
+					else
+						set.AddRange(affectedHediffs);
 				}, set.Contains(hediff) ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex, new Color(1, 1, 1, 0.5f)),
 				new("TD.DefaultCare".Translate(), delegate
 				{
@@ -358,7 +364,8 @@ namespace SmartMedicine
 				var mc = (MedicalCareCategory)i;
 				list.Add(new FloatMenuOption(mc.GetLabel().CapitalizeFirst(), delegate
 				{
-					PriorityCareSettingsComp.Get()[hediff] = mc;
+					var comp = PriorityCareSettingsComp.Get();
+					affectedHediffs.ForEach(x => comp[x] = mc);
 				}, loadedCareTextures[(int)mc], Color.white));
 			}
 
