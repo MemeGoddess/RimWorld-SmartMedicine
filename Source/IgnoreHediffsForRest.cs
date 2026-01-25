@@ -163,6 +163,13 @@ namespace SmartMedicine
 
 			return matcher.Instructions();
 		}
+
+		[HarmonyPatch(typeof(Hediff), nameof(Hediff.PostRemoved))]
+		[HarmonyPostfix]
+		public static void RemoveIgnoredHediff(Hediff __instance)
+		{
+			PriorityCareSettingsComp.GetIgnore().Remove(__instance);
+		}
 	}
 
 	public enum PatchStatus

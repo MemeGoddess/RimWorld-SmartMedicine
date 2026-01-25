@@ -340,9 +340,9 @@ namespace SmartMedicine
 			loadedCareTextures ??= careTextures();
 			var affectedHediffs = 
 				hediff.pawn.health.hediffSet.hediffs
-				.Where(x => x.UIGroupKey == hediff.UIGroupKey)
+				.Where(x => x.UIGroupKey == hediff.UIGroupKey && x.Part == hediff.Part)
 				.ToList();
-			var set = PriorityCareSettingsComp.GetIgnore();
+ 			var set = PriorityCareSettingsComp.GetIgnore();
 
 			var list = new List<FloatMenuOption>
 			{
