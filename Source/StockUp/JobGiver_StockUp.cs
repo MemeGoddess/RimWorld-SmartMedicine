@@ -18,6 +18,16 @@ namespace SmartMedicine
 		public static JobDef StockDown;
 	}
 
+	[StaticConstructorOnStartup]
+	public static class StockUpReadyForSurgery
+	{
+		public static HashSet<JobDef> ValidSurgeryJobs;
+		static StockUpReadyForSurgery()
+		{
+			ValidSurgeryJobs = [JobDefOf.LayDown, JobDefOf.LayDownAwake, JobDefOf.LayDownResting, JobDefOf.Wait_Downed, JobDefOf.Wait_WithSleeping];
+		}
+	}
+
 	public class JobGiver_StockUp : ThinkNode_JobGiver
 	{
 		public static bool Skip(Pawn pawn)
@@ -25,12 +35,34 @@ namespace SmartMedicine
 			if (pawn.inventory.UnloadEverything)
 				return true;
 
-			Log.Message($"Skip need tend?");
-			if (pawn.Map.mapPawns.AllPawnsSpawned.Any(p => HealthAIUtility.ShouldBeTendedNowByPlayer(p) && pawn.CanReserveAndReach(p, PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true)))
-				return true;
+			if (!pawn.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
+				return false;
 
-			if (pawn.Map.mapPawns.AllPawnsSpawned.Any(p => p is IBillGiver billGiver && billGiver.BillStack.AnyShouldDoNow && pawn.CanReserveAndReach(p, PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true)))
+#if DEBUG
+			var tendPawns = pawn.Map.mapPawns.AllPawnsSpawned.Where(p => HealthAIUtility.ShouldBeTendedNowByPlayer(p) && pawn.CanReserveAndReach(p, PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true)).ToList();
+
+			if (tendPawns.Any())
+			{
+				Log.Message($"Skipping stockup on {pawn.LabelShort} due to tending for {string.Join(", ", tendPawns.Select(x => x.LabelShort))}");
+#else
+			if (pawn.Map.mapPawns.AllPawnsSpawned.Any(p => HealthAIUtility.ShouldBeTendedNowByPlayer(p) && pawn.CanReserveAndReach(p, PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true)))
+			{
+#endif
 				return true;
+			}
+#if DEBUG
+			var surgeryPawns = pawn.Map.mapPawns.AllPawnsSpawned.Where(p =>
+				p is IBillGiver billGiver && billGiver.BillStack.AnyShouldDoNow && pawn.CanReserveAndReach(p,
+					PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true) && StockUpReadyForSurgery.ValidSurgeryJobs.Contains(p.CurJobDef)).ToList();
+			if(surgeryPawns.Any())
+			{
+				Log.Message($"Skipping stockup on {pawn.LabelShort} due to surgery for {string.Join(", ", surgeryPawns.Select(x => x.LabelShort))}");
+#else
+			if (pawn.Map.mapPawns.AllPawnsSpawned.Any(p => p is IBillGiver billGiver && billGiver.BillStack.AnyShouldDoNow && pawn.CanReserveAndReach(p, PathEndMode.ClosestTouch, Danger.Deadly, ignoreOtherReservations: true) && StockUpReadyForSurgery.ValidSurgeryJobs.Contains(p.CurJobDef)))
+			{
+#endif
+				return true;
+			}
 
 			return false;
 		}
