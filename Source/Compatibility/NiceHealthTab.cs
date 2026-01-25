@@ -385,15 +385,13 @@ namespace SmartMedicine.Compatibility
 		static MethodBase TargetMethod()
 		{
 			var type = AccessTools.TypeByName("NiceHealthTab.DollDrawer");
-			// Search all nested types for the lambda
 			foreach (var nestedType in type.GetNestedTypes(BindingFlags.NonPublic))
 			{
-				// Look for methods that match the lambda pattern from DrawDiseases
 				var method = nestedType
 					.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
 					.FirstOrDefault(m =>
-						m.Name.Contains("DrawDiseases") &&  // From DrawDiseases method
-						m.Name.Contains("b__") &&            // Lambda indicator
+						m.Name.Contains("DrawDiseases") &&
+						m.Name.Contains("b__") &&
 						m.GetParameters().Length == 1 &&
 						m.GetParameters()[0].ParameterType == typeof(Rect));
 
@@ -455,7 +453,7 @@ namespace SmartMedicine.Compatibility
 				new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(NiceHealthTab_DiseaseIcons), nameof(DrawExtraIcons)))
 			);
 
-						return matcher.Instructions();
+			return matcher.Instructions();
 		}
 
 		private static void DrawExtraIcons(Hediff hediff, Rect first, Rect? second)
@@ -467,7 +465,7 @@ namespace SmartMedicine.Compatibility
 			}
 
 			first = first.ContractedBy(4f);
-			var rect = new Rect(first.xMax - first.height * 2f, first.center.y - first.height / 2, first.height * 2f, first.height);
+			var rect = new Rect(first.xMax, first.center.y - first.height / 2, first.height * 2f, first.height);
 			NiceHealthTab_InjuryIcons.DrawExtraIcons(hediff, rect);
 		}
 	}
