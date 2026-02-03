@@ -32,11 +32,15 @@ namespace SmartMedicine
 		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
 		private List<Hediff> hediffList;
 		private List<MedicalCareCategory> medCareList;
+
+		public HashSet<Hediff> ignoredHediffs;
 		public PriorityCareSettingsComp(Game game)
 		{
-			hediffCare = new Dictionary<Hediff, MedicalCareCategory>();
-			hediffList = new List<Hediff>();
-			medCareList = new List<MedicalCareCategory>();
+			hediffCare = new();
+			hediffList = [];
+			medCareList = [];
+
+			ignoredHediffs = new();
 		}
 
 		
@@ -47,13 +51,22 @@ namespace SmartMedicine
 			Scribe_Collections.Look(ref hediffCare, "hediffCare", LookMode.Reference, LookMode.Value, ref hediffList,
 					ref medCareList);
 
+			Scribe_Collections.Look(ref ignoredHediffs, "ignoredHediffs", LookMode.Reference);
+
 			hediffCare ??= new();
+			ignoredHediffs ??= new();
 		}
 
 
 		public static Dictionary<Hediff, MedicalCareCategory> Get()
 		{
 			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
+		}
+
+		public static HashSet<Hediff> GetIgnore()
+		{
+			var test = Current.Game.GetComponent<PriorityCareSettingsComp>().ignoredHediffs;
+			return test;
 		}
 
 		public static bool MaxPriorityCare(Pawn patient, out MedicalCareCategory care) => MaxPriorityCare(patient.health.hediffSet.hediffs, out care);
@@ -112,49 +125,169 @@ namespace SmartMedicine
 	[HarmonyPatch(typeof(HealthCardUtility), "DrawHediffRow")]
 	public static class HediffRowPriorityCare
 	{
-		//private static void DrawHediffRow(Rect rect, Pawn pawn, IEnumerable<Hediff> diffs, ref float curY)
-		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase mb)
+
+		private static readonly MethodInfo DrawHighlightIfMouseover =
+			AccessTools.Method(typeof(Widgets), nameof(Widgets.DrawHighlightIfMouseover));
+
+		private static readonly MethodInfo WidgetLabel =
+			AccessTools.Method(typeof(Widgets), nameof(Widgets.Label), [typeof(Rect), typeof(string)]);
+
+		private static readonly MethodInfo CurrentEvent = AccessTools.PropertyGetter(typeof(Event), nameof(Event.current));
+
+		private static readonly MethodInfo DrawElementStack = AccessTools
+			.Method(typeof(GenUI), nameof(GenUI.DrawElementStack))
+			.MakeGenericMethod([typeof(GenUI.AnonymousStackElement)]);
+
+		private static readonly MethodInfo ElementsAdd = AccessTools.Method(typeof(List<GenUI.AnonymousStackElement>),
+			nameof(List<GenUI.AnonymousStackElement>.Add));
+
+		private static readonly FieldInfo LastMaxIconsTotalWidth =
+			AccessTools.Field(typeof(HealthCardUtility), "lastMaxIconsTotalWidth");
+		private static readonly MethodInfo ButtonInvis = AccessTools.Method(typeof(Widgets), nameof(Widgets.ButtonInvisible));
+		public static readonly MethodInfo HediffTendableNow = AccessTools.Method(typeof(Hediff), nameof(Hediff.TendableNow));
+		private static readonly MethodInfo Button = AccessTools.PropertyGetter(typeof(Event), nameof(Event.button));
+		private static readonly MethodInfo CreateMenu = AccessTools.Method(typeof(HediffRowPriorityCare), nameof(CreateCareMenu));
+
+		private static readonly MethodInfo CreateElement =
+			AccessTools.Method(typeof(HediffRowPriorityCare), nameof(AddElements));
+
+		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase mb)
 		{
-			//Find local Hediff
-			LocalVariableInfo localHediffInfo = mb.GetMethodBody().LocalVariables.First(lv => lv.LocalType == typeof(Hediff));
-			MethodInfo LabelInfo = AccessTools.Method(typeof(Widgets), "Label", new Type[] {typeof(Rect), typeof(string)});
-			int labelCount = 0;
+			// This might still be the best way to get it.
+			var hediffIndex =
+				mb.GetMethodBody()?.LocalVariables.First(lv => lv.LocalType == typeof(Hediff)).LocalIndex;
+			var hediffLoad = new CodeInstruction(OpCodes.Ldloc_S, hediffIndex);
 
-			MethodInfo DrawHediffCareInfo = AccessTools.Method(typeof(HediffRowPriorityCare), nameof(DrawHediffCare));
+			var matcher = new CodeMatcher(instructions);
 
-			MethodInfo LabelButtonInfo = AccessTools.Method(typeof(HediffRowPriorityCare), nameof(LabelButton));
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, DrawHighlightIfMouseover))
+				.ThrowIfInvalid($"Unable to find entrypoint for {nameof(HediffRowPriorityCare)}");
 
-			//Draw Icon
-			MethodInfo DrawIconsInfo = AccessTools.Method(typeof(GenUI), nameof(GenUI.DrawElementStack)).MakeGenericMethod(new Type[] { typeof(GenUI.AnonymousStackElement) });
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, WidgetLabel))
+				.ThrowIfInvalid("Unable to find Hediff label on Hediff row");
 
-			List<CodeInstruction> instList = instructions.ToList();
-			for (int i = 0; i < instList.Count; i++)
-			{
-				if(instList[i].Calls(LabelInfo))
+			var loadRect = matcher.InstructionAt(-2).Clone();
+
+			var skip = il.DefineLabel();
+			var exitPoint = matcher.InstructionAt(1);
+
+			exitPoint.labels.Add(skip);
+
+			#region Care Menu
+			// Check if Right Click
+			matcher.InsertAfterAndAdvance(
+				new CodeInstruction(OpCodes.Call, CurrentEvent),
+				new CodeInstruction(OpCodes.Call, Button),
+				new CodeInstruction(OpCodes.Ldc_I4_1),
+				new CodeInstruction(OpCodes.Ceq),
+				new CodeInstruction(OpCodes.Brfalse_S, skip)
+			).ThrowIfInvalid("Instructions invalid after checking Right Click on Hediff row");
+
+			// Check if clicked in this area
+			matcher.InsertAfterAndAdvance(
+				loadRect,
+				new CodeInstruction(OpCodes.Ldc_I4_1),
+				new CodeInstruction(OpCodes.Call, ButtonInvis),
+				new CodeInstruction(OpCodes.Brfalse_S, skip)
+			).ThrowIfInvalid("Instructions invalid after checking Click Area on Hediff row");
+
+			// Check if tendable
+			matcher.InsertAfterAndAdvance(
+				new CodeInstruction(OpCodes.Ldloc_S, hediffIndex),
+				new CodeInstruction(OpCodes.Ldc_I4_1),
+				new CodeInstruction(OpCodes.Callvirt, HediffTendableNow),
+				new CodeInstruction(OpCodes.Brfalse_S, skip)
+			).ThrowIfInvalid("Instructions invalid after checking Tendable on Hediff row");
+
+			matcher.InsertAfter(
+				new CodeInstruction(OpCodes.Ldloc_S, hediffIndex),
+				new CodeInstruction(OpCodes.Call, CreateMenu)
+			).ThrowIfInvalid("Instructions invalid after setting up Specific Care Menu on Hediff row");
+			#endregion
+
+			#region Care Icon
+			matcher.End();
+			matcher.MatchStartBackwards(new CodeMatch(OpCodes.Call, DrawElementStack))
+				.ThrowIfInvalid("Unable to find DrawElementStack call on Hediff row");
+
+			matcher.MatchStartBackwards(new CodeMatch(x =>
+					x.IsLdloc() && x.operand is LocalBuilder lb && lb.LocalType == typeof(List<GenUI.AnonymousStackElement>)))
+				.ThrowIfInvalid("Unable to find Elements list on Hediff row");
+
+			var elementsLoad = matcher.Instruction.Clone();
+			var elementsSave = new CodeInstruction(OpCodes.Stloc, elementsLoad.operand);
+
+			matcher.MatchStartBackwards(
+					new CodeMatch(x =>
+						x.opcode == OpCodes.Ldfld && x.operand is FieldInfo fieldInfo && fieldInfo.FieldType == typeof(Rect)),
+					new CodeMatch(x =>
+						x.IsLdloc()))
+				.ThrowIfInvalid("Unable to find Rect for drawing icons on Hediff row");
+
+			var rectLoad = matcher.InstructionsInRange(matcher.Pos - 1, matcher.Pos);
+			rectLoad.ForEach(x => x.labels.Clear());
+
+			matcher.MatchStartBackwards(new CodeMatch(OpCodes.Callvirt, ElementsAdd))
+				.ThrowIfInvalid("Unable to find hook for drawing icons on Hediff row");
+			var nextOp = matcher.InstructionAt(1);
+			var labels = nextOp.labels.ToList();
+			nextOp.labels.Clear();
+			rectLoad.FirstOrDefault()!.labels.AddRange(labels);
+
+			matcher.InsertAfter(
+				new List<CodeInstruction>(rectLoad)
 				{
-					if (labelCount == 1)//Second label is TaggedString, Third label is hediff label, but second with string
-					{
-						yield return new CodeInstruction(OpCodes.Ldloc_S, localHediffInfo.LocalIndex);//hediff
-						yield return new CodeInstruction(OpCodes.Call, LabelButtonInfo);
-					}
-					else
-					{
-						labelCount++;
-						yield return instList[i];
-					}
+					elementsLoad,
+					hediffLoad,
+					new(OpCodes.Call, CreateElement),
+					elementsSave,
 				}
-				else if(instList[i].Calls(DrawIconsInfo))
-				{
-					yield return new CodeInstruction(OpCodes.Ldloc_S, localHediffInfo.LocalIndex);//hediff
-					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HediffRowPriorityCare), nameof(DrawElementStack2)));
-				}
-				else
-					yield return instList[i];
+			).ThrowIfInvalid("Instructions invalid after inserting call for drawing icons on Hediff row");
+			#endregion
 
-			}
+			#region Fix Highlight
+
+			var highlightRect = il.DeclareLocal(typeof(Rect));
+			matcher.Start();
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, DrawHighlightIfMouseover))
+				.ThrowIfInvalid("Unable to find DrawHighlightIfMouseover for Highlight fix");
+
+			matcher.MatchStartBackwards(new CodeMatch(x =>
+				x.IsLdloc() && x.operand is LocalBuilder lb && lb.LocalType == typeof(Rect)))
+				.ThrowIfInvalid("Unable to find Rect for Highlight fix");
+
+			var rectIndex = (matcher.Instruction.operand as LocalBuilder)!.LocalIndex;
+			matcher.RemoveInstruction();
+			var endPos = matcher.Pos - 1;
+
+			matcher.MatchStartBackwards(new CodeMatch(x => x.IsLdloc() && x.LocalIndex() == rectIndex));
+			matcher.Advance();
+			var startPos = matcher.Pos;
+
+			var newRectInstructions = matcher.InstructionsInRange(startPos, endPos);
+			matcher.MatchStartForward(new CodeMatch(OpCodes.Call, DrawHighlightIfMouseover))
+				.ThrowIfInvalid("Unable to find DrawHighlightIfMouseover after clean for Highlight fix");
+
+
+			matcher.InsertAndAdvance(new CodeInstruction(OpCodes.Ldloca, highlightRect));
+			matcher.InsertAndAdvance(newRectInstructions);
+			matcher.InsertAndAdvance(new CodeInstruction(OpCodes.Ldloc, highlightRect));
+
+			matcher.Advance(-4);
+			matcher.InsertAfter(
+				new CodeInstruction(OpCodes.Ldsfld, LastMaxIconsTotalWidth),
+				new CodeInstruction(OpCodes.Add)
+			).ThrowIfInvalid("Instructions invalid after creating new rect for Highlight fix");
+
+
+			#endregion
+
+			var debug2 = string.Join("\n", instructions.Select(x => x.ToString()));
+			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
+			return matcher.Instructions();
 		}
-		//public static Rect DrawElementStack<T>(Rect rect, float rowHeight, List<T> elements, StackElementDrawer<T> drawer, StackElementWidthGetter<T> widthGetter, float rowMargin = 4f, float elementMargin = 5f, bool allowOrderOptimization = true)
-		public static Rect DrawElementStack2(Rect rect, float rowHeight, List<GenUI.AnonymousStackElement> elements, GenUI.StackElementDrawer<GenUI.AnonymousStackElement> drawer, GenUI.StackElementWidthGetter<GenUI.AnonymousStackElement> widthGetter, float rowMargin, float elementMargin, bool allowOrderOptimization, Hediff hediff)
+
+		public static List<GenUI.AnonymousStackElement> AddElements(Rect rect, List<GenUI.AnonymousStackElement> elements, Hediff hediff)
 		{
 			if (PriorityCareSettingsComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
 			{
@@ -162,50 +295,84 @@ namespace SmartMedicine
 				{
 					drawer = delegate (Rect r)
 					{
-						Texture2D tex = careTextures()[(int)heCare];
+						loadedCareTextures ??= careTextures();
+						Texture2D tex = loadedCareTextures[(int)heCare];
 						r = new Rect(2 * rect.x + rect.width - r.x - 20f, r.y, 20f, 20f);
 						GUI.DrawTexture(r, tex);
 					},
 					width = 20f
 				});
 			}
-			return GenUI.DrawElementStack(rect, rowHeight, elements, drawer, widthGetter, rowMargin, elementMargin,  allowOrderOptimization);
+
+			if (PriorityCareSettingsComp.GetIgnore().Contains(hediff))
+			{
+				elements.Add(new GenUI.AnonymousStackElement
+				{
+					drawer = delegate (Rect r)
+					{
+						r = new Rect(2 * rect.x + rect.width - r.x - 20f, r.y, 20f, 20f);
+						var save = GUI.color;
+						GUI.color = new Color(1, 1, 1, 0.5f);
+						GUI.DrawTexture(r, Widgets.CheckboxOffTex);
+						GUI.color = save;
+					},
+					width = 20f
+				});
+			}
+
+			return elements;
 		}
 
 
-		//private static Texture2D[] careTextures;
 		private static AccessTools.FieldRef<Texture2D[]> careTextures =
 			AccessTools.StaticFieldRefAccess< Texture2D[]>(AccessTools.Field( typeof(MedicalCareUtility), "careTextures"));
 
-		public static void DrawHediffCare(Hediff hediff, ref Rect iconRect)
+		private static Texture2D[] loadedCareTextures;
+
+		public static void CreateCareMenu(Hediff hediff)
 		{
+			// This makes patches and compat easier to handle.
+			Find.WindowStack.Add(new FloatMenu(CreateCareMenuOptions(hediff)));
 		}
 
-		public static void LabelButton(Rect rect, string text,  Hediff hediff)
+		public static List<FloatMenuOption> CreateCareMenuOptions(Hediff hediff)
 		{
-			Widgets.Label(rect, text);
-			if (hediff.TendableNow(true) && Event.current.button == 1 && Widgets.ButtonInvisible(rect))
-			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
+			loadedCareTextures ??= careTextures();
+			var affectedHediffs = 
+				hediff.pawn.health.hediffSet.hediffs
+				.Where(x => x.UIGroupKey == hediff.UIGroupKey && x.Part == hediff.Part)
+				.ToList();
+ 			var set = PriorityCareSettingsComp.GetIgnore();
 
-				//Default care
-				list.Add(new FloatMenuOption("TD.DefaultCare".Translate(), delegate
+			var list = new List<FloatMenuOption>
+			{
+				new(PatientBedRestDefOf.PatientBedRest.labelShort.CapitalizeFirst(), delegate
+				{
+					if (!set.Add(hediff)) 
+						set.RemoveWhere(x => affectedHediffs.Contains(x));
+					else
+						set.AddRange(affectedHediffs);
+				}, set.Contains(hediff) ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex, new Color(1, 1, 1, 0.5f)),
+				new("TD.DefaultCare".Translate(), delegate
 				{
 					PriorityCareSettingsComp.Get().Remove(hediff);
-				}));
+				}, iconTex: loadedCareTextures[(int)hediff.pawn.playerSettings.medCare], new Color(1, 1, 1, 0.5f))
+			};
 
-				for (int i = 0; i < 5; i++)
+			for (var i = 0; i < 5; i++)
+			{
+				var mc = (MedicalCareCategory)i;
+				list.Add(new FloatMenuOption(mc.GetLabel().CapitalizeFirst(), delegate
 				{
-					MedicalCareCategory mc = (MedicalCareCategory)i;
-					list.Add(new FloatMenuOption(mc.GetLabel(), delegate
-					{
-						PriorityCareSettingsComp.Get()[hediff] = mc;
-					}));
-				}
-				Find.WindowStack.Add(new FloatMenu(list));
+					var comp = PriorityCareSettingsComp.Get();
+					affectedHediffs.ForEach(x => comp[x] = mc);
+				}, loadedCareTextures[(int)mc], Color.white));
 			}
+
+			return list;
 		}
 	}
+
 
 	[HarmonyPatch(typeof(Hediff), "TendPriority", MethodType.Getter)]
 	public static class PriorityHediff
@@ -314,5 +481,11 @@ namespace SmartMedicine
 			}
 			return true;
 		}
+	}
+
+	[DefOf]
+	public static class PatientBedRestDefOf
+	{
+		public static WorkTypeDef PatientBedRest;
 	}
 }
