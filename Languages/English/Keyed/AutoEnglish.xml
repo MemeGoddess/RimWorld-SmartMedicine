@@ -44,4 +44,9 @@
 	<TD.DefaultCare>Default care</TD.DefaultCare>
 	<TD.RemoveTempTendDesc>Remove this (in case it lingers around after it's unused)</TD.RemoveTempTendDesc>
 	<TD.StockAnythingWithoutDev>Stock ANYTHING button without Dev Mode</TD.StockAnythingWithoutDev>
+
+	<TD.NiceHealthTab.Optimize>Low level optimizations for Health Tab</TD.NiceHealthTab.Optimize>
+	<TD.NiceHealthTab.OptimizeDesc>Optimizations:
+- Cache static Hediff condition labels instead of translating every frame
+	</TD.NiceHealthTab.OptimizeDesc>
 </LanguageData>

@@ -88,6 +88,7 @@ namespace SmartMedicine
 		private string niceHealthTab;
 
 		private string niceHealthOptimizeLabel;
+		private string niceHealthOptimizeDesc;
 
 		private bool DonePre = false;
 		private Vector2 scroll = Vector2.zero;
@@ -128,6 +129,7 @@ namespace SmartMedicine
 			stockAnythingWithoutDevLabel = "TD.StockAnythingWithoutDev".Translate();
 			niceHealthTab = "NiceHealthTabSettingsCategory".TryTranslate(out var niceHealthTabActual) ? niceHealthTabActual : "Nice Health Tab";
 			niceHealthOptimizeLabel = "TD.NiceHealthTab.Optimize".Translate();
+			niceHealthOptimizeDesc = "TD.NiceHealthTab.OptimizeDesc".Translate();
 		}
 
 		private static List<TabRecord> CompatTabs = null;
@@ -240,7 +242,7 @@ namespace SmartMedicine
 		private void NiceHealthTabSettings(Listing_Standard options)
 		{
 			// TODO Add tooltip
-			options.CheckboxLabeled(niceHealthOptimizeLabel, ref niceHealthOptimize);
+			options.CheckboxLabeled(niceHealthOptimizeLabel, ref niceHealthOptimize, niceHealthOptimizeDesc);
 		}
 
 
