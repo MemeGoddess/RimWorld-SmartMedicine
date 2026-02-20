@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 using RimWorld;
+using SmartMedicine.Compatibility;
 using TD.Utilities;
 
 namespace SmartMedicine
@@ -34,6 +36,104 @@ namespace SmartMedicine
 
 		public bool stockAnythingWithoutDev = false;
 
+		public bool niceHealthOptimize = true;
+
+		private string settingDoctorInv;
+
+		private string settingPatientInv;
+
+		private string settingNearby;
+		private string settingNearbyDesc;
+
+		private string settingNearbyDist;
+		private string settingNearbyDistDesc;
+
+		private string spacesFormat;
+
+		private string settingOtherInv;
+
+		private string settingAnimalInv;
+
+		private string settingOtherAnyDist;
+		private string settingOtherAnyDistDesc;
+
+		private string settingOtherDist;
+
+		private string settingMinimal;
+		private string settingMinimalDesc;
+
+		private string settingNoMed;
+		private string settingNoMedDesc;
+
+		private string settingStockUp;
+		private string settingStockUpDesc;
+
+		private string settingStockUpEnough;
+		private string settingStockUpEnoughDesc;
+
+		private string settingStockUpReturn;
+
+		private string settingFieldTendingNoBeds;
+		private string settingFieldTendingNoBedsDesc;
+
+		private string settingFieldTendingAlways;
+		private string settingFieldTendingAlwaysDesc;
+
+		private string settingGlobalSurgeryUnlimited;
+		private string settingGlobalSurgeryUnlimitedDesc;
+
+		private string stockAnythingWithoutDevLabel;
+
+		
+		private string niceHealthTab;
+
+		private string niceHealthOptimizeLabel;
+
+		private bool DonePre = false;
+		private Vector2 scroll = Vector2.zero;
+		public Rect scrollView = new();
+		public void PreOpen()
+		{
+			if (DonePre)
+				return;
+
+			DonePre = true;
+			settingDoctorInv = "TD.SettingDoctorInv".Translate();
+			settingPatientInv = "TD.SettingPatientInv".Translate();
+			settingNearby = "TD.SettingNearby".Translate();
+			settingNearbyDesc = "TD.SettingNearbyDesc".Translate();
+			settingNearbyDist = "TD.SettingNearbyDist".Translate();
+			settingNearbyDistDesc = "TD.SettingNearbyDistDesc".Translate();
+			spacesFormat = "TD.SpacesFormat".Translate();
+			settingOtherInv = "TD.SettingOtherInv".Translate();
+			settingAnimalInv = "TD.SettingAnimalInv".Translate();
+			settingOtherAnyDist = "TD.SettingOtherAnyDist".Translate();
+			settingOtherAnyDistDesc = "TD.SettingOtherAnyDistDesc".Translate();
+			settingOtherDist = "TD.SettingOtherDist".Translate();
+			settingMinimal = "TD.SettingMinimal".Translate();
+			settingMinimalDesc = "TD.SettingMinimalDesc".Translate();
+			settingNoMed = "TD.SettingNoMed".Translate();
+			settingNoMedDesc = "TD.SettingNoMedDesc".Translate();
+			settingStockUp = "TD.SettingStockUp".Translate();
+			settingStockUpDesc = "TD.SettingStockUpDesc".Translate();
+			settingStockUpEnough = "TD.SettingStockUpEnough".Translate();
+			settingStockUpEnoughDesc = "TD.SettingStockUpEnoughDesc".Translate();
+			settingStockUpReturn = "TD.SettingStockUpReturn".Translate();
+			settingFieldTendingNoBeds = "TD.SettingFieldTendingNoBeds".Translate();
+			settingFieldTendingNoBedsDesc = "TD.SettingFieldTendingNoBedsDesc".Translate();
+			settingFieldTendingAlways = "TD.SettingFieldTendingAlways".Translate();
+			settingFieldTendingAlwaysDesc = "TD.SettingFieldTendingAlwaysDesc".Translate();
+			settingGlobalSurgeryUnlimited = "TD.SettingGlobalSurgeryUnlimited".Translate();
+			settingGlobalSurgeryUnlimitedDesc = "TD.SettingGlobalSurgeryUnlimitedDesc".Translate();
+			stockAnythingWithoutDevLabel = "TD.StockAnythingWithoutDev".Translate();
+			niceHealthTab = "NiceHealthTabSettingsCategory".TryTranslate(out var niceHealthTabActual) ? niceHealthTabActual : "Nice Health Tab";
+			niceHealthOptimizeLabel = "TD.NiceHealthTab.Optimize".Translate();
+		}
+
+		private static List<TabRecord> CompatTabs = null;
+
+		private static Action<Listing_Standard> RenderCurrentTab = null;
+
 		public bool FieldTendingActive(Pawn patient)
 		{
 			return patient.IsFreeColonist && 
@@ -43,64 +143,98 @@ namespace SmartMedicine
 
 		public void DoWindowContents(Rect wrect)
 		{
+			PreOpen();
+			var font = Text.Font;
 			var options = new Listing_Standard();
-			options.Begin(wrect);
-			options.CheckboxLabeled("TD.SettingDoctorInv".Translate(), ref useDoctorMedicine);
-			options.CheckboxLabeled("TD.SettingPatientInv".Translate(), ref usePatientMedicine);
+
+			options.BeginScrollViewEx(wrect, ref scroll, scrollView);
+			options.CheckboxLabeled(settingDoctorInv, ref useDoctorMedicine);
+			options.CheckboxLabeled(settingPatientInv, ref usePatientMedicine);
 			if (useDoctorMedicine || usePatientMedicine)
 			{
-				options.CheckboxLabeled("TD.SettingNearby".Translate(), ref useCloseMedicine, "TD.SettingNearbyDesc".Translate());
+				options.CheckboxLabeled(settingNearby, ref useCloseMedicine, settingNearbyDesc);
 				if (useCloseMedicine)
 				{
-					options.SliderLabeled("TD.SettingNearbyDist".Translate(), ref distanceToUseEqualOnGround, "TD.SpacesFormat".Translate(), 0, 99, "TD.SettingNearbyDistDesc".Translate());
+					options.SliderLabeled(settingNearbyDist, ref distanceToUseEqualOnGround, spacesFormat, 0, 99, settingNearbyDistDesc);
 				}
 			}
 			options.Gap();
 
 
-			options.CheckboxLabeled("TD.SettingOtherInv".Translate(), ref useColonistMedicine);
-			options.CheckboxLabeled("TD.SettingAnimalInv".Translate(), ref useAnimalMedicine);
+			options.CheckboxLabeled(settingOtherInv, ref useColonistMedicine);
+			options.CheckboxLabeled(settingAnimalInv, ref useAnimalMedicine);
 			if (useColonistMedicine || useAnimalMedicine)
 			{
-				options.CheckboxLabeled("TD.SettingOtherAnyDist".Translate(), ref useOtherEvenIfFar, "TD.SettingOtherAnyDistDesc".Translate());
+				options.CheckboxLabeled(settingOtherAnyDist, ref useOtherEvenIfFar, settingOtherAnyDistDesc);
 				if (!useOtherEvenIfFar)
-					options.SliderLabeled("TD.SettingOtherDist".Translate(), ref distanceToUseFromOther, "TD.SpacesFormat".Translate(), 0, 99);
+					options.SliderLabeled(settingOtherDist, ref distanceToUseFromOther, spacesFormat, 0, 99);
 			}
 			options.Gap();
 
 
-			options.CheckboxLabeled("TD.SettingMinimal".Translate(), ref minimalMedicineForNonUrgent,
-				"TD.SettingMinimalDesc".Translate());
+			options.CheckboxLabeled(settingMinimal, ref minimalMedicineForNonUrgent,
+				settingMinimalDesc);
 			if (minimalMedicineForNonUrgent) noMedicineForNonUrgent = false;
 
-			options.CheckboxLabeled("TD.SettingNoMed".Translate(), ref noMedicineForNonUrgent,
-				"TD.SettingNoMedDesc".Translate());
+			options.CheckboxLabeled(settingNoMed, ref noMedicineForNonUrgent,
+				settingNoMedDesc);
 			if (noMedicineForNonUrgent) minimalMedicineForNonUrgent = false;
 			options.Gap();
 
-			options.CheckboxLabeled("TD.SettingStockUp".Translate(), ref stockUp);
-			options.Label("TD.SettingStockUpDesc".Translate());
-			options.SliderLabeled("TD.SettingStockUpEnough".Translate(), ref stockUpEnough, "{0:P0}", 0, 5, "TD.SettingStockUpEnoughDesc".Translate());
-			options.CheckboxLabeled("TD.SettingStockUpReturn".Translate(), ref stockUpReturn);
+			options.CheckboxLabeled(settingStockUp, ref stockUp);
+			options.Label(settingStockUpDesc);
+			options.SliderLabeled(settingStockUpEnough, ref stockUpEnough, "{0:P0}", 0, 5, settingStockUpEnoughDesc);
+			options.CheckboxLabeled(settingStockUpReturn, ref stockUpReturn);
 			options.Gap();
 
 
-			options.CheckboxLabeled("TD.SettingFieldTendingNoBeds".Translate(), ref fieldTendingForLackOfBed, "TD.SettingFieldTendingNoBedsDesc".Translate());
+			options.CheckboxLabeled(settingFieldTendingNoBeds, ref fieldTendingForLackOfBed, settingFieldTendingNoBedsDesc);
 			if (fieldTendingForLackOfBed)
 				fieldTendingAlways = false; 
 
-			options.CheckboxLabeled("TD.SettingFieldTendingAlways".Translate(), ref fieldTendingAlways, "TD.SettingFieldTendingAlwaysDesc".Translate());
+			options.CheckboxLabeled(settingFieldTendingAlways, ref fieldTendingAlways, settingFieldTendingAlwaysDesc);
 			if (fieldTendingAlways)
 				fieldTendingForLackOfBed = false;
 			options.Gap();
 
-			options.CheckboxLabeled("TD.SettingGlobalSurgeryUnlimited".Translate(), ref defaultUnlimitedSurgery, "TD.SettingGlobalSurgeryUnlimitedDesc".Translate());
+			options.CheckboxLabeled(settingGlobalSurgeryUnlimited, ref defaultUnlimitedSurgery, settingGlobalSurgeryUnlimitedDesc);
 
-			options.CheckboxLabeled("TD.StockAnythingWithoutDev".Translate(), ref stockAnythingWithoutDev, "TD.SettingGlobalSurgeryUnlimitedDesc".Translate());
+			options.CheckboxLabeled(stockAnythingWithoutDevLabel, ref stockAnythingWithoutDev, settingGlobalSurgeryUnlimitedDesc);
 
-			options.End();
+			if (CompatibilityLoader.CompatCount > 0 && CompatTabs == null)
+			{
+				CompatTabs = new();
+				if(CompatibilityLoader.NiceHealthTab)
+					CompatTabs.Add(new TabRecord(niceHealthTab, () => RenderCurrentTab = NiceHealthTabSettings, RenderCurrentTab == NiceHealthTabSettings));
+
+				CompatTabs.First().clickedAction.Invoke();
+			}
+
+			switch (CompatibilityLoader.CompatCount)
+			{
+				case 1:
+					var tab = CompatTabs[0];
+					Text.Font = GameFont.Medium;
+					options.Label(tab.label);
+					Text.Font = font;
+					break;
+				case > 1:
+					TabDrawer.DrawTabs(options.GetRect(32), CompatTabs);
+					break;
+			}
+
+			RenderCurrentTab?.Invoke(options);
+
+			options.EndScrollView(ref scrollView);
 		}
-		
+
+		private void NiceHealthTabSettings(Listing_Standard options)
+		{
+			// TODO Add tooltip
+			options.CheckboxLabeled(niceHealthOptimizeLabel, ref niceHealthOptimize);
+		}
+
+
 		public override void ExposeData()
 		{
 			Scribe_Values.Look(ref useDoctorMedicine, "useDoctorMedicine", true);
@@ -126,4 +260,6 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref stockAnythingWithoutDev, "defaultUnlimitedSurgery", false);
 		}
 	}
+
+
 }
