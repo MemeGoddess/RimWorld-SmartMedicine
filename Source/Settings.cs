@@ -219,13 +219,22 @@ namespace SmartMedicine
 					Text.Font = font;
 					break;
 				case > 1:
-					TabDrawer.DrawTabs(options.GetRect(32), CompatTabs);
+					// I hate you.... WHY IS THERE A BUILT-IN BACKTRACK?
+					options.Gap(32);
+					TabDrawer.DrawTabs(options.GetRect(32), CompatTabs, 0, scrollView.width);
+					options.Gap(-32);
 					break;
 			}
 
-			RenderCurrentTab?.Invoke(options);
+			DoRenderCompatSettings(options);
 
 			options.EndScrollView(ref scrollView);
+		}
+
+		// This is its own method to show better in Dubs Performance
+		private void DoRenderCompatSettings(Listing_Standard options)
+		{
+			RenderCurrentTab?.Invoke(options);
 		}
 
 		private void NiceHealthTabSettings(Listing_Standard options)
@@ -258,6 +267,8 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref fieldTendingAlways, "fieldTendingAlways", false);
 			Scribe_Values.Look(ref defaultUnlimitedSurgery, "defaultUnlimitedSurgery", false);
 			Scribe_Values.Look(ref stockAnythingWithoutDev, "defaultUnlimitedSurgery", false);
+
+			Scribe_Values.Look(ref niceHealthOptimize, "niceHealthTabOptimize", true);
 		}
 	}
 
