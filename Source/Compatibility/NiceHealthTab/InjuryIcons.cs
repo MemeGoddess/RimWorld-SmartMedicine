@@ -118,28 +118,23 @@ public static class InjuryIcons
 
 		return matcher.Instructions();
 	}
-
-	private static AccessTools.FieldRef<Texture2D[]> careTextures =
-		AccessTools.StaticFieldRefAccess<Texture2D[]>(AccessTools.Field(typeof(MedicalCareUtility), "careTextures"));
-
-	private static Texture2D[] loadedCareTextures;
 	public static void DrawExtraIcons(Hediff hediff, Rect rect)
 	{
 		if (hediff == null)
 			return;
 		var save = GUI.color;
 		GUI.color = Color.white;
-		if (PriorityCareSettingsComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
+		var comp = PriorityCareSettingsComp.GetComp();
+		if (comp.hediffCare.TryGetValue(hediff, out MedicalCareCategory heCare))
 		{
 			rect.x -= 20;
-			loadedCareTextures ??= careTextures();
-			Texture2D tex = loadedCareTextures[(int)heCare];
+			Texture2D tex = HediffRowPriorityCare.loadedCareTextures[(int)heCare];
 			GUI.DrawTexture(new Rect(rect.x, rect.y, 20f, 20f), tex);
 		}
 
 		GUI.color = save;
 
-		if (PriorityCareSettingsComp.GetIgnore().Contains(hediff))
+		if (comp.ignoredHediffs.Contains(hediff))
 		{
 			rect.x -= 20;
 			save = GUI.color;
