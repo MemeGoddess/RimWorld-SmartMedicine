@@ -128,6 +128,7 @@ public static class InjuryIcons
 		if (comp.hediffCare.TryGetValue(hediff, out MedicalCareCategory heCare))
 		{
 			rect.x -= 20;
+			HediffRowPriorityCare.loadedCareTextures ??= HediffRowPriorityCare.careTextures();
 			Texture2D tex = HediffRowPriorityCare.loadedCareTextures[(int)heCare];
 			GUI.DrawTexture(new Rect(rect.x, rect.y, 20f, 20f), tex);
 		}
