@@ -7,10 +7,11 @@ using Verse;
 using TD.Utilities;
 using HarmonyLib;
 using RimWorld;
+using SmartMedicine.Utilities;
 
 namespace SmartMedicine
 {
-	public class SmartMedicineGameComp : GameComponent
+	public class SmartMedicineGameComp : FetchOnceGameComponent<SmartMedicineGameComp>
 	{
 		public ExDictionary<Pawn, ExDictionary<ThingDef, int>> settings = new ExDictionary<Pawn, ExDictionary<ThingDef, int>>() { keyMode = LookMode.Reference };
 		public Pawn copiedPawn;
@@ -34,12 +35,12 @@ namespace SmartMedicine
 
 		public static SmartMedicineGameComp Get()
 		{
-			return Current.Game.GetComponent<SmartMedicineGameComp>();
+			return GetComp();
 		}
 
 		public static Dictionary<Pawn, ExDictionary<ThingDef, int>> Settings()
 		{
-			return Current.Game.GetComponent<SmartMedicineGameComp>().settings;
+			return GetComp().settings;
 		}
 	}
 

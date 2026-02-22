@@ -21,85 +21,10 @@ namespace SmartMedicine
 		}
 
 		// Reroute existing calls to use the new comp
+		[Obsolete]
 		public static Dictionary<Hediff, MedicalCareCategory> Get()
 		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
-		}
-	}
-
-	public class PriorityCareSettingsComp : GameComponent
-	{
-		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
-		private List<Hediff> hediffList;
-		private List<MedicalCareCategory> medCareList;
-
-		public HashSet<Hediff> ignoredHediffs;
-		public PriorityCareSettingsComp(Game game)
-		{
-			hediffCare = new();
-			hediffList = [];
-			medCareList = [];
-
-			ignoredHediffs = new();
-		}
-
-		
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			
-			Scribe_Collections.Look(ref hediffCare, "hediffCare", LookMode.Reference, LookMode.Value, ref hediffList,
-					ref medCareList);
-
-			Scribe_Collections.Look(ref ignoredHediffs, "ignoredHediffs", LookMode.Reference);
-
-			hediffCare ??= new();
-			ignoredHediffs ??= new();
-		}
-
-
-		public static Dictionary<Hediff, MedicalCareCategory> Get()
-		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
-		}
-
-		public static HashSet<Hediff> GetIgnore()
-		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>().ignoredHediffs;
-		}
-
-		public static PriorityCareSettingsComp GetComp()
-		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>();
-		}
-
-		public static bool MaxPriorityCare(Pawn patient, out MedicalCareCategory care) => MaxPriorityCare(patient.health.hediffSet.hediffs, out care);
-		public static bool MaxPriorityCare(List<Hediff> hediffs, out MedicalCareCategory care)
-		{
-			care = MedicalCareCategory.NoCare;
-			bool found = false;
-			var hediffCare = Get();
-			foreach (Hediff h in hediffs)
-			{
-				if (h.TendableNow() && hediffCare.TryGetValue(h, out MedicalCareCategory heCare))
-				{
-					care = heCare > care ? heCare : care;
-					found = true;
-				}
-			}
-			return found;
-		}
-		
-		public static bool AllPriorityCare(Pawn patient) => AllPriorityCare(patient.health.hediffSet.hediffs);
-		public static bool AllPriorityCare(List<Hediff> hediffs)
-		{
-			var hediffCare = Get();
-			foreach(Hediff h in hediffs)
-			{
-				if (!hediffCare.ContainsKey(h))
-					return false;
-			}
-			return true;
+			return PriorityCareSettingsComp.GetComp().hediffCare;
 		}
 	}
 
