@@ -83,14 +83,23 @@ public static class InjuryIcons
 			.ThrowIfInvalid("Unable to find MouseOver call to inject extra icons");
 
 
-		var test = AccessTools.PropertyGetter(typeof(Rect?), nameof(Nullable<Rect>.HasValue));
-		var skip = il.DefineLabel();
+		var hasValue = AccessTools.PropertyGetter(typeof(Rect?), nameof(Nullable<Rect>.HasValue));
+		var skipCtor = il.DefineLabel();
+		var skipAll = il.DefineLabel();
+
+		matcher.Instruction.labels.Add(skipAll);
+
 		matcher.Insert(
+			new CodeInstruction(OpCodes.Ldsfld, InjectInjuryHediff.CurrentHediffField),
+			new CodeInstruction(OpCodes.Ldc_I4_1),
+			new CodeInstruction(OpCodes.Callvirt, HediffTendableNow),
+			new CodeInstruction(OpCodes.Brfalse_S, skipAll),
+
 			new CodeInstruction(OpCodes.Ldsfld, InjectInjuryHediff.CurrentHediffField),
 
 			new CodeInstruction(OpCodes.Ldloca_S, rect),
-			new CodeInstruction(OpCodes.Call, test),
-			new CodeInstruction(OpCodes.Brtrue, skip),
+			new CodeInstruction(OpCodes.Call, hasValue),
+			new CodeInstruction(OpCodes.Brtrue, skipCtor),
 
 			new CodeInstruction(OpCodes.Ldarg_3),
 			new CodeInstruction(OpCodes.Ldarg_2),
@@ -108,7 +117,7 @@ public static class InjuryIcons
 			new CodeInstruction(OpCodes.Newobj, nullableFloatCtor),
 			new CodeInstruction(OpCodes.Stloc_S, rect),
 
-			new CodeInstruction(OpCodes.Ldloca_S, rect) { labels = [skip] },
+			new CodeInstruction(OpCodes.Ldloca_S, rect) { labels = [skipCtor] },
 			new CodeInstruction(OpCodes.Call, miGetValueOrDefault),
 			new CodeInstruction(OpCodes.Call,
 				AccessTools.Method(typeof(InjuryIcons),

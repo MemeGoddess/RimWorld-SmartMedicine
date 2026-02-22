@@ -95,8 +95,17 @@ public static class DiseaseIcons
 			.ThrowIfInvalid("Instructions invalid after capturing rect in DrawRow");
 
 		matcher.End();
+
+		var skipAll = il.DefineLabel();
+		matcher.Instruction.labels.Add(skipAll);
+
 		matcher.Insert(
 			new CodeInstruction(OpCodes.Ldsfld, InjectInjuryHediff.CurrentHediffField) { labels = exit },
+			new CodeInstruction(OpCodes.Ldc_I4_1),
+			new CodeInstruction(OpCodes.Callvirt, HediffTendableNow),
+			new CodeInstruction(OpCodes.Brfalse_S, skipAll),
+
+			new CodeInstruction(OpCodes.Ldsfld, InjectInjuryHediff.CurrentHediffField),
 			new CodeInstruction(OpCodes.Ldarg_1),
 			new CodeInstruction(OpCodes.Ldloc, rectLocal),
 			new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(DiseaseIcons), nameof(DrawExtraIcons)))
