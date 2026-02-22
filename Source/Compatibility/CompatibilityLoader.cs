@@ -10,6 +10,7 @@ namespace SmartMedicine.Compatibility
 	public static class CompatibilityLoader
   {
 		public static bool NiceHealthTab = ModLister.AnyModActiveNoSuffix(["andromeda.nicehealthtab"]);
+		public static bool BetterHealthTab = ModLister.AnyModActiveNoSuffix(["tziirh.betterhealthtabforked"]);
 
 
 		public static int CompatCount = new[] {NiceHealthTab}.Count(x => x);
