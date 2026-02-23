@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
 using RimWorld;
+using SmartMedicine.Utilities;
 using UnityEngine;
 using UnityStandardAssets.ImageEffects;
 using Verse;
@@ -14,14 +15,14 @@ using Verse.AI;
 namespace SmartMedicine
 {
 	[HarmonyPatch(typeof(JobDriver), nameof(JobDriver.Cleanup))]
-	public class DefaultCareFix : GameComponent
+	public class DefaultCareFix : FetchOnceGameComponent<DefaultCareFix>
 	{
 		private Dictionary<Pawn, MedicalCareCategory> OriginalCare = new();
 		private Dictionary<Pawn, (int, MedicalCareCategory)> OriginalCareExpiry = new();
 
 		private List<Pawn> intKey = new List<Pawn>();
 		private List<MedicalCareCategory> intValue = new List<MedicalCareCategory>();
-		public DefaultCareFix(Game game) : base()
+		public DefaultCareFix(Game game)
 		{
 
 		}
@@ -68,7 +69,7 @@ namespace SmartMedicine
 			if (patient == null)
 				return;
 
-			var gameComponent = Current.Game.GetComponent<DefaultCareFix>();
+			var gameComponent = GetComp();
 
 			if (!gameComponent.OriginalCare.TryGetValue(patient, out var care))
 				return;
@@ -83,7 +84,7 @@ namespace SmartMedicine
 			if (patient == null)
 				return null;
 
-			var gameComponent = Current.Game.GetComponent<DefaultCareFix>();
+			var gameComponent = GetComp();
 
 			if (!gameComponent.OriginalCare.ContainsKey(patient))
 				return null;
@@ -91,8 +92,6 @@ namespace SmartMedicine
 			gameComponent.OriginalCare.TryGetValue(patient, out var care);
 			
 			return care;
-
-
 		}
 
 		public override void ExposeData()

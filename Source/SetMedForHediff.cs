@@ -21,81 +21,10 @@ namespace SmartMedicine
 		}
 
 		// Reroute existing calls to use the new comp
+		[Obsolete]
 		public static Dictionary<Hediff, MedicalCareCategory> Get()
 		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
-		}
-	}
-
-	public class PriorityCareSettingsComp : GameComponent
-	{
-		public Dictionary<Hediff, MedicalCareCategory> hediffCare;
-		private List<Hediff> hediffList;
-		private List<MedicalCareCategory> medCareList;
-
-		public HashSet<Hediff> ignoredHediffs;
-		public PriorityCareSettingsComp(Game game)
-		{
-			hediffCare = new();
-			hediffList = [];
-			medCareList = [];
-
-			ignoredHediffs = new();
-		}
-
-		
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			
-			Scribe_Collections.Look(ref hediffCare, "hediffCare", LookMode.Reference, LookMode.Value, ref hediffList,
-					ref medCareList);
-
-			Scribe_Collections.Look(ref ignoredHediffs, "ignoredHediffs", LookMode.Reference);
-
-			hediffCare ??= new();
-			ignoredHediffs ??= new();
-		}
-
-
-		public static Dictionary<Hediff, MedicalCareCategory> Get()
-		{
-			return Current.Game.GetComponent<PriorityCareSettingsComp>().hediffCare;
-		}
-
-		public static HashSet<Hediff> GetIgnore()
-		{
-			var test = Current.Game.GetComponent<PriorityCareSettingsComp>().ignoredHediffs;
-			return test;
-		}
-
-		public static bool MaxPriorityCare(Pawn patient, out MedicalCareCategory care) => MaxPriorityCare(patient.health.hediffSet.hediffs, out care);
-		public static bool MaxPriorityCare(List<Hediff> hediffs, out MedicalCareCategory care)
-		{
-			care = MedicalCareCategory.NoCare;
-			bool found = false;
-			var hediffCare = Get();
-			foreach (Hediff h in hediffs)
-			{
-				if (h.TendableNow() && hediffCare.TryGetValue(h, out MedicalCareCategory heCare))
-				{
-					care = heCare > care ? heCare : care;
-					found = true;
-				}
-			}
-			return found;
-		}
-		
-		public static bool AllPriorityCare(Pawn patient) => AllPriorityCare(patient.health.hediffSet.hediffs);
-		public static bool AllPriorityCare(List<Hediff> hediffs)
-		{
-			var hediffCare = Get();
-			foreach(Hediff h in hediffs)
-			{
-				if (!hediffCare.ContainsKey(h))
-					return false;
-			}
-			return true;
+			return PriorityCareSettingsComp.GetComp().hediffCare;
 		}
 	}
 
@@ -289,7 +218,8 @@ namespace SmartMedicine
 
 		public static List<GenUI.AnonymousStackElement> AddElements(Rect rect, List<GenUI.AnonymousStackElement> elements, Hediff hediff)
 		{
-			if (PriorityCareSettingsComp.Get().TryGetValue(hediff, out MedicalCareCategory heCare))
+			var comp = PriorityCareSettingsComp.GetComp();
+			if (comp.hediffCare.TryGetValue(hediff, out MedicalCareCategory heCare))
 			{
 				elements.Add(new GenUI.AnonymousStackElement
 				{
@@ -304,7 +234,7 @@ namespace SmartMedicine
 				});
 			}
 
-			if (PriorityCareSettingsComp.GetIgnore().Contains(hediff))
+			if (comp.ignoredHediffs.Contains(hediff))
 			{
 				elements.Add(new GenUI.AnonymousStackElement
 				{
@@ -323,11 +253,74 @@ namespace SmartMedicine
 			return elements;
 		}
 
+		// ReSharper disable once UnusedMember.Global
+		// Used by Mod Compat
+		public static List<Action<Rect>> GetElements(Hediff hediff)
+		{
+			var elements = new List<Action<Rect>>();
+			var comp = PriorityCareSettingsComp.GetComp();
+			if (comp.hediffCare.TryGetValue(hediff, out MedicalCareCategory heCare))
+			{
+				elements.Add(r =>
+				{
+					loadedCareTextures ??= careTextures();
+					var tex = loadedCareTextures[(int)heCare];
+					GUI.DrawTexture(r, tex);
+				});
+			}
 
-		private static AccessTools.FieldRef<Texture2D[]> careTextures =
+			if (comp.ignoredHediffs.Contains(hediff))
+			{
+				elements.Add(r =>
+				{
+					var save = GUI.color;
+					GUI.color = new Color(1, 1, 1, 0.5f);
+					GUI.DrawTexture(r, Widgets.CheckboxOffTex);
+					GUI.color = save;
+				});
+			}
+
+			return elements;
+		}
+
+		// ReSharper disable once UnusedMember.Global
+		// Used by Mod Compat
+		public static List<Action<Rect>> GetElementsByList(List<Hediff> hediffs)
+		{
+			var elements = new List<Action<Rect>>();
+			var careComp = PriorityCareSettingsComp.GetComp();
+			var hediffCares = hediffs.Where(careComp.hediffCare.ContainsKey).ToList();
+
+			if (hediffCares.Any())
+			{
+				var maxCare = hediffCares.Max(h => careComp.hediffCare[h]);
+				elements.Add(r =>
+				{
+					loadedCareTextures ??= careTextures();
+					var tex = loadedCareTextures[(int)maxCare];
+					GUI.DrawTexture(r, tex);
+				});
+			}
+
+			if (hediffs.Any(careComp.ignoredHediffs.Contains))
+			{
+				elements.Add(r =>
+				{
+					var save = GUI.color;
+					GUI.color = new Color(1, 1, 1, 0.5f);
+					GUI.DrawTexture(r, Widgets.CheckboxOffTex);
+					GUI.color = save;
+				});
+			}
+
+			return elements;
+		}
+
+
+		public static AccessTools.FieldRef<Texture2D[]> careTextures =
 			AccessTools.StaticFieldRefAccess< Texture2D[]>(AccessTools.Field( typeof(MedicalCareUtility), "careTextures"));
 
-		private static Texture2D[] loadedCareTextures;
+		public static Texture2D[] loadedCareTextures;
 
 		public static void CreateCareMenu(Hediff hediff)
 		{
@@ -337,26 +330,36 @@ namespace SmartMedicine
 
 		public static List<FloatMenuOption> CreateCareMenuOptions(Hediff hediff)
 		{
-			loadedCareTextures ??= careTextures();
 			var affectedHediffs = 
 				hediff.pawn.health.hediffSet.hediffs
 				.Where(x => x.UIGroupKey == hediff.UIGroupKey && x.Part == hediff.Part)
 				.ToList();
- 			var set = PriorityCareSettingsComp.GetIgnore();
+
+			return CreateCareMenuOptionsWithList(affectedHediffs, hediff);
+		}
+
+		public static List<FloatMenuOption> CreateCareMenuOptionsWithList(List<Hediff> affectedHediffs, Hediff primaryHediff = null)
+		{
+			loadedCareTextures ??= careTextures();
+			primaryHediff = affectedHediffs.FirstOrDefault();
+			if (primaryHediff == null)
+				return new List<FloatMenuOption>();
+
+			var set = PriorityCareSettingsComp.GetIgnore();
 
 			var list = new List<FloatMenuOption>
 			{
 				new(PatientBedRestDefOf.PatientBedRest.labelShort.CapitalizeFirst(), delegate
 				{
-					if (!set.Add(hediff)) 
+					if (!set.Add(primaryHediff))
 						set.RemoveWhere(x => affectedHediffs.Contains(x));
 					else
 						set.AddRange(affectedHediffs);
-				}, set.Contains(hediff) ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex, new Color(1, 1, 1, 0.5f)),
+				}, set.Contains(primaryHediff) ? Widgets.CheckboxOffTex : Widgets.CheckboxOnTex, new Color(1, 1, 1, 0.5f)),
 				new("TD.DefaultCare".Translate(), delegate
 				{
-					PriorityCareSettingsComp.Get().Remove(hediff);
-				}, iconTex: loadedCareTextures[(int)hediff.pawn.playerSettings.medCare], new Color(1, 1, 1, 0.5f))
+					PriorityCareSettingsComp.Get().Remove(primaryHediff);
+				}, iconTex: loadedCareTextures[(int)primaryHediff.pawn.playerSettings.medCare], new Color(1, 1, 1, 0.5f))
 			};
 
 			for (var i = 0; i < 5; i++)

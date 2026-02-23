@@ -1,6 +1,8 @@
-﻿using System;
+﻿using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -39,6 +41,38 @@ namespace TD.Utilities
 
 			Text.Anchor = anchor;
 			ls.Gap(ls.verticalSpacing);
+		}
+
+		public static FieldInfo rectInfo = AccessTools.Field(typeof(Listing_Standard), "listingRect");
+		//listing.columnWidthInt = listing.listingRect.width;
+		public static FieldInfo widthInfo = AccessTools.Field(typeof(Listing_Standard), "columnWidthInt");
+		//listing.curX = 0f;
+		public static FieldInfo curXInfo = AccessTools.Field(typeof(Listing_Standard), "curX");
+		//listing.curY = 0f;
+		public static FieldInfo curYInfo = AccessTools.Field(typeof(Listing_Standard), "curY");
+		public static FieldInfo fontInfo = AccessTools.Field(typeof(Listing_Standard), "font");
+		public static void BeginScrollViewEx(this Listing_Standard listing, Rect rect, ref Vector2 scrollPosition, Rect viewRect)
+		{
+			Widgets.BeginGroup(rect);
+			Widgets.BeginScrollView(rect.AtZero(), ref scrollPosition, viewRect, true);
+
+			rect.height = 100000f;
+			rect.width -= 20f;
+
+			rectInfo.SetValue(listing, rect);
+			widthInfo.SetValue(listing, rect.width);
+			curXInfo.SetValue(listing, 0);
+			curYInfo.SetValue(listing, 0);
+
+			Text.Font = (GameFont)fontInfo.GetValue(listing);
+		}
+
+		public static void EndScrollView(this Listing_Standard listing, ref Rect viewRect)
+		{
+			viewRect.width = listing.ColumnWidth;
+			viewRect.height = listing.CurHeight;
+			Widgets.EndScrollView();
+			listing.End();
 		}
 	}
 }

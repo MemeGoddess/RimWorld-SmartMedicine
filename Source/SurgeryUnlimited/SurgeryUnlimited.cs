@@ -8,10 +8,11 @@ using RimWorld;
 using Verse;
 using HarmonyLib;
 using UnityEngine;
+using SmartMedicine.Utilities;
 
 namespace SmartMedicine.SurgeryUnlimited
 {
-	public class SurgeryUnlimitedGameComponent : GameComponent
+	public class SurgeryUnlimitedGameComponent : FetchOnceGameComponent<SurgeryUnlimitedGameComponent>
 	{
 		public bool surgeryUnlimitedDefault;
 		public HashSet<Pawn> surgeryUnlimited;
@@ -24,7 +25,7 @@ namespace SmartMedicine.SurgeryUnlimited
 
 		public static SurgeryUnlimitedGameComponent Get()
 		{
-			return Current.Game?.GetComponent<SurgeryUnlimitedGameComponent>();
+			return GetComp();
 		}
 
 		public void Set(Pawn pawn, bool val)
@@ -118,15 +119,17 @@ namespace SmartMedicine.SurgeryUnlimited
 			}
 		}
 
+		private static string SurgeryUnlimitedLabel;
 		public static void DrawSurgeryOption(Rect leftRect, Pawn pawn, ref float curY)
 		{
+			SurgeryUnlimitedLabel ??= "TD.PawnSettingSurgeryUnlimited".Translate();
 			if (pawn.playerSettings != null && !pawn.Dead && Current.ProgramState == ProgramState.Playing)
 			{
 				bool selfTend = pawn.playerSettings.selfTend;
 				Rect rect2 = new Rect(0f, curY, leftRect.width, 24f);
 				SurgeryUnlimitedGameComponent comp = SurgeryUnlimitedGameComponent.Get();
 				bool surgeryUnlimited = comp.surgeryUnlimited.Contains(pawn);
-				Widgets.CheckboxLabeled(rect2, "TD.PawnSettingSurgeryUnlimited".Translate(), ref surgeryUnlimited);
+				Widgets.CheckboxLabeled(rect2, SurgeryUnlimitedLabel, ref surgeryUnlimited);
 				comp.Set(pawn, surgeryUnlimited);
 
 				curY += 28f;

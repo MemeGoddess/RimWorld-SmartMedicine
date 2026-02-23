@@ -82,7 +82,7 @@ namespace SmartMedicine
 		public static void FilterInjuriesForMedCount(List<Hediff> hediffs)
 		{
 			Log.Message($"Filtering ({hediffs.ToStringSafeEnumerable()})");
-			var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
+			var defaultCareFix = DefaultCareFix.GetComp();
 
 			if (PriorityCareSettingsComp.MaxPriorityCare(hediffs, out MedicalCareCategory maxPriorityCare))
 			{ 
@@ -399,7 +399,7 @@ namespace SmartMedicine
 
 			MedicalCareCategory defaultCare = patient.GetCare();
 
-			var defaultCareFix = Current.Game.GetComponent<DefaultCareFix>();
+			var defaultCareFix = DefaultCareFix.GetComp();
 			var originalCare = defaultCareFix.GetOriginalCare(patient);
 			if (originalCare != null)
 				defaultCare = originalCare.Value;
