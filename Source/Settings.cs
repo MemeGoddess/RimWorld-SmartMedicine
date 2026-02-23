@@ -241,7 +241,6 @@ namespace SmartMedicine
 
 		private void NiceHealthTabSettings(Listing_Standard options)
 		{
-			// TODO Add tooltip
 			options.CheckboxLabeled(niceHealthOptimizeLabel, ref niceHealthOptimize, niceHealthOptimizeDesc);
 		}
 
