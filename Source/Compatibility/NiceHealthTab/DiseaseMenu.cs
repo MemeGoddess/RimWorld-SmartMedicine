@@ -90,7 +90,6 @@ public static class DiseaseMenu
 			new CodeInstruction(OpCodes.Call, CreateMenu)
 		).ThrowIfInvalid("Instructions invalid after setting up Specific Care Menu on Hediff row");
 
-		var debug2 = string.Join("\n", instructions.Select(x => x.ToString()));
 		return matcher.Instructions();
 	}
 }

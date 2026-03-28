@@ -210,9 +210,6 @@ namespace SmartMedicine
 
 
 			#endregion
-
-			var debug2 = string.Join("\n", instructions.Select(x => x.ToString()));
-			var debug = string.Join("\n", matcher.Instructions().Select(x => x.ToString()));
 			return matcher.Instructions();
 		}
 
