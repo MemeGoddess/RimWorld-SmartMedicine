@@ -190,6 +190,7 @@ namespace SmartMedicine
 				//if (job.count < 1) job.count = 1;
 			}
 			int needCount = Mathf.Min(medicineToDrop.stackCount, job.count);
+			if (needCount <= 0) return;
 
 			Log.Message($"{healer} Starting Tend with {medicineToDrop}:{needCount}");
 
