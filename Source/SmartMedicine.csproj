@@ -24,7 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <OutputPath>..\1.6\Assemblies\</OutputPath>
     <Optimize>true</Optimize>
-    <DebugType>none</DebugType>
+    <DebugType>embedded</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>

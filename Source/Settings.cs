@@ -267,7 +267,7 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref fieldTendingForLackOfBed, "fieldTendingForLackOfBed", false);
 			Scribe_Values.Look(ref fieldTendingAlways, "fieldTendingAlways", false);
 			Scribe_Values.Look(ref defaultUnlimitedSurgery, "defaultUnlimitedSurgery", false);
-			Scribe_Values.Look(ref stockAnythingWithoutDev, "defaultUnlimitedSurgery", false);
+			Scribe_Values.Look(ref stockAnythingWithoutDev, "stockAnythingWithoutDev", false);
 
 			Scribe_Values.Look(ref niceHealthOptimize, "niceHealthTabOptimize", true);
 		}
