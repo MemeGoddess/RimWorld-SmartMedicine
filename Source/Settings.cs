@@ -170,7 +170,7 @@ namespace SmartMedicine
 				var carryTimeFactor = 1f / carryMoveSpeedFactor;
 				
 				ticksToReachBed = Mathf.CeilToInt(pathToPatient + (pathToBed * carryTimeFactor));
-				var ticksUntilDead = TicksUntilDead(patient) ?? 0;
+				var ticksUntilDead = TicksUntilDead(patient);
 				
 				// Leave at least 2 hours to tend, otherwise it's kinda over anyway
 				if (ticksToReachBed + (GenDate.TicksPerHour * 2) > ticksUntilDead)
@@ -185,10 +185,10 @@ namespace SmartMedicine
 		}
 
 		private const int quickReturn = 625;
-		public int? TicksUntilDead(Pawn patient)
+		public int TicksUntilDead(Pawn patient)
 		{
 			if (patient?.health == null || patient?.health.Dead is true)
-				return null;
+				return int.MaxValue;
 
 			var ticksUntilDeath = HealthUtility.TicksUntilDeathDueToBloodLoss(patient);
 			
@@ -236,9 +236,6 @@ namespace SmartMedicine
 						ticksUntilDeath = ticks;
 				}
 			}
-
-			if (ticksUntilDeath == int.MaxValue)
-				return null;
 
 			return ticksUntilDeath;
 		}
