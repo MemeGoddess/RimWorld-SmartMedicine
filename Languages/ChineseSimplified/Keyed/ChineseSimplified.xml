@@ -21,7 +21,7 @@
 	<TD.SettingStockUp>储备药物 &amp; 成瘾品</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>（储备设置在殖民者的装备栏中）</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>即使没有床位，医生也会给病人治疗。</TD.SettingFieldTendingNoBeds>
-	<TD.SettingFieldTendingIfDying>医生会在病人到不了医院时就地治疗</TD.SettingFieldTendingIfDying>
+	<TD.SettingFieldTendingIfDying>如果病人撑不到被送到医院，医生会就地给他们治疗</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>病人必须休息，躺下，或者被征召到目标</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>医生随时可以进行治疗，无论是否有床。</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>殖民者会优先去床上，但是你可以征召病人让他们待在一个地方。</TD.SettingFieldTendingAlwaysDesc>

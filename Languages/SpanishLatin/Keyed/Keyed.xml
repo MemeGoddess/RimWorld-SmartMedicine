@@ -21,7 +21,7 @@
 	<TD.SettingStockUp>Abastecerse de medicinas &amp; drogas</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>La configuración de abastecimiento se encuentra en la pestaña Equipo del colono</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>Los médicos tratarán a los pacientes aún si no hay camas disponibles</TD.SettingFieldTendingNoBeds>
-	<TD.SettingFieldTendingIfDying>Los médicos atenderán en el lugar si el paciente no sobreviviría al traslado al hospital</TD.SettingFieldTendingIfDying>
+	<TD.SettingFieldTendingIfDying>Los médicos tratarán a los pacientes en el lugar si no sobrevivirían al trayecto al hospital</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>El paciente debe estar descansando, derribado o reclutado para poder ser tratado</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>Los médicos siempre pueden atender, con o sin cama.</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>Los colonos priorizarán ir a la cama, pero es posible reclutar a los pacientes para mantenerlos en su posición.</TD.SettingFieldTendingAlwaysDesc>

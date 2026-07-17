@@ -21,7 +21,7 @@
 	<TD.SettingStockUp>Faites le plein de médicaments</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>Les paramètres d'inventaire se trouvent dans l'onglet Équipement du colon</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>Les médecins traiteront les patients s'il n'y a pas de lits disponibles</TD.SettingFieldTendingNoBeds>
-	<TD.SettingFieldTendingIfDying>Les médecins soigneront sur place si le patient ne survivrait pas au trajet jusqu'à l'hôpital</TD.SettingFieldTendingIfDying>
+	<TD.SettingFieldTendingIfDying>Les médecins soigneront les patients sur place s'ils ne survivraient pas au trajet jusqu'à l'hôpital</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>Le patient doit être au repos, abattu ou mobilisé pour être ciblé</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>Les médecins peuvent toujours soigner, avec ou sans lit</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>Les colons donneront la priorité à aller au lit, mais vous pouvez mobiliser des patients pour les garder en place.</TD.SettingFieldTendingAlwaysDesc>
