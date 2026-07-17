@@ -9,6 +9,8 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 using HarmonyLib;
+using SmartMedicine.Compatibility;
+using SmartMedicine.Compatibility.CombatExtended;
 
 namespace SmartMedicine
 {
@@ -336,6 +338,24 @@ namespace SmartMedicine
 			}
 
 			return ticksUntilDeath;
+		}
+
+		public static int DistanceTo(Thing t1, Thing t2, Pawn pather)
+		{
+			if (pather != null)
+			{
+				var realPath = pather.Map.pathFinder.FindPathNow(t1.Position, t2.Position, pather);
+				var actualDistance = realPath?.Found is true ? realPath.TotalCost : 0f;
+				realPath?.ReleaseToPool();
+				if(actualDistance > 0f)
+					return (int)actualDistance;
+			}
+			return (t1.Position - t2.Position).LengthManhattan;
+		}
+
+		public static int DistanceTo(Thing t, Thing t1, Thing t2, Pawn pather)
+		{
+			return DistanceTo(t, t1, pather) + DistanceTo(t, t2, pather);
 		}
 	}
 }
