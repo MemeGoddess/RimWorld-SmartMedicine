@@ -67,34 +67,73 @@ namespace SmartMedicine
 			[HarmonyPostfix]
 			public static IEnumerable<Toil> Postfix(IEnumerable<Toil> __result, JobDriver_TendPatient __instance)
 			{
-				var completedFirstTendCycle = false;
+				bool completedFirstTendCycle = false;
+				bool attemptedMedicineRecovery = false;
 
-				// After the first finalize, enforce laying status continuously.
-				__instance.AddEndCondition(() =>
+				__instance.AddEndCondition(delegate
 				{
 					if (!completedFirstTendCycle)
+					{
 						return JobCondition.Ongoing;
+					}
 
 					var doctor = __instance.GetActor();
 					var patient = __instance.job?.targetA.Pawn;
-
 					if (doctor == null || patient == null)
+					{
 						return JobCondition.Ongoing;
+					}
 
-					return WorkGiver_Tend.GoodLayingStatusForTend(patient, doctor)
-						? JobCondition.Ongoing
-						: JobCondition.Succeeded;
+					if (WorkGiver_Tend.GoodLayingStatusForTend(patient, doctor))
+					{
+						return JobCondition.Ongoing;
+					}
+
+					if (!attemptedMedicineRecovery)
+					{
+						attemptedMedicineRecovery = true;
+						TryRecoverMedicine(doctor, patient, __instance.job);
+					}
+
+					return JobCondition.Succeeded;
 				});
 
 				foreach (var toil in __result)
 				{
-					// Toils_Tend.FinalizeTend uses this debug name.
 					if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
 					{
-						toil.AddFinishAction(() => completedFirstTendCycle = true);
+						toil.AddFinishAction(delegate
+						{
+							completedFirstTendCycle = true;
+						});
 					}
 
 					yield return toil;
+				}
+			}
+			
+			private static void TryRecoverMedicine(Pawn doctor, Pawn patient, Job job)
+			{
+				if (doctor?.carryTracker == null || job == null)
+				{
+					return;
+				}
+
+				Thing medicine = job.targetB.Thing;
+				if (medicine == null || medicine.DestroyedOrNull())
+				{
+					return;
+				}
+
+				if (doctor.carryTracker.CarriedThing != medicine) 
+				{
+					return;
+				}
+
+				if (doctor.inventory != null && doctor.carryTracker.CarriedThing != null)
+				{
+					var carriedThing = doctor.carryTracker.CarriedThing;
+					doctor.carryTracker.innerContainer.TryTransferToContainer(carriedThing, doctor.inventory.innerContainer, carriedThing.stackCount);
 				}
 			}
 		}
