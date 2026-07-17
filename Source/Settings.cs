@@ -6,6 +6,7 @@ using Verse;
 using RimWorld;
 using SmartMedicine.Compatibility;
 using TD.Utilities;
+using Verse.AI;
 
 namespace SmartMedicine
 {
@@ -145,7 +146,7 @@ namespace SmartMedicine
 			if (!fieldTendingAlways && !fieldTendingForLackOfBed && !fieldTendingIfDying)
 				return false;
 			
-			if (!patient.IsFreeColonist || patient.Dead)
+			if (!patient.IsFreeColonist || patient.Dead || doctor?.CanReserve(patient) is false)
 				return false;
 
 			if (fieldTendingAlways)

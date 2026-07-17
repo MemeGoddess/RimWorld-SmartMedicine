@@ -67,12 +67,12 @@ namespace SmartMedicine
 		[HarmonyPostfix]
 		public static IEnumerable<Toil> Postfix(IEnumerable<Toil> __result, JobDriver_TendPatient __instance)
 		{
-			bool completedFirstTendCycle = false;
+			bool shouldCheck = false;
 			bool attemptedMedicineRecovery = false;
 
 			__instance.AddEndCondition(delegate
 			{
-				if (!completedFirstTendCycle)
+				if (!shouldCheck)
 				{
 					return JobCondition.Ongoing;
 				}
@@ -86,6 +86,7 @@ namespace SmartMedicine
 
 				if (WorkGiver_Tend.GoodLayingStatusForTend(patient, doctor))
 				{
+					shouldCheck = false;
 					return JobCondition.Ongoing;
 				}
 
@@ -102,7 +103,7 @@ namespace SmartMedicine
 			{
 				if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
 				{
-					toil.AddFinishAction(delegate { completedFirstTendCycle = true; });
+					toil.AddFinishAction(delegate { shouldCheck = true; });
 				}
 
 				yield return toil;

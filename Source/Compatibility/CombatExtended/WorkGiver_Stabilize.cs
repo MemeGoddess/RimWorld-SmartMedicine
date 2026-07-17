@@ -37,7 +37,9 @@ public class WorkGiver_Stabilize : WorkGiver_Scanner
 		if (!HealthAIUtility.ShouldBeTendedNowByPlayer(patient)) 
 			return false;
 		var ticksUntilDead = FieldTendingUtility.TicksUntilDead(patient);
-		return (ticksUntilDead < GenDate.TicksPerHour * 2 || ticksUntilDead < FieldTendingUtility.DistanceTo(pawn, patient, RestUtility.FindPatientBedFor(patient), pawn)) && pawn.inventory?.innerContainer?.InnerListForReading?.Any(x => x.def.IsMedicine) is true && pawn.CanReserve((LocalTargetInfo) (Thing) patient, ignoreOtherReservations: forced) && (!patient.IsMutant || patient.mutant.Def.entitledToMedicalCare) && (!patient.InAggroMentalState || patient.health.hediffSet.HasHediff(HediffDefOf.Scaria));
+		var bed = RestUtility.FindPatientBedFor(patient);
+			
+		return (ticksUntilDead < GenDate.TicksPerHour * 2 || (bed != null && ticksUntilDead < FieldTendingUtility.DistanceTo(pawn, patient, bed, pawn))) && pawn.inventory?.innerContainer?.InnerListForReading?.Any(x => x.def.IsMedicine) is true && pawn.CanReserve((LocalTargetInfo) (Thing) patient, ignoreOtherReservations: forced) && (!patient.IsMutant || patient.mutant.Def.entitledToMedicalCare) && (!patient.InAggroMentalState || patient.health.hediffSet.HasHediff(HediffDefOf.Scaria));
 	}
 	
 	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
