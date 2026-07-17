@@ -142,6 +142,9 @@ namespace SmartMedicine
 
 		public bool FieldTendingActive(Pawn patient, Pawn doctor = null)
 		{
+			if (!fieldTendingAlways && !fieldTendingForLackOfBed && !fieldTendingIfDying)
+				return false;
+			
 			if (!patient.IsFreeColonist || patient.Dead)
 				return false;
 
