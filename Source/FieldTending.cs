@@ -59,6 +59,47 @@ namespace SmartMedicine
 		}
 	}
 
+	namespace YourModNamespace
+	{
+		[HarmonyPatch(typeof(JobDriver_TendPatient), "MakeNewToils")]
+		public static class TendPatient_CheckEachTendPatch
+		{
+			[HarmonyPostfix]
+			public static IEnumerable<Toil> Postfix(IEnumerable<Toil> __result, JobDriver_TendPatient __instance)
+			{
+				var completedFirstTendCycle = false;
+
+				// After the first finalize, enforce laying status continuously.
+				__instance.AddEndCondition(() =>
+				{
+					if (!completedFirstTendCycle)
+						return JobCondition.Ongoing;
+
+					var doctor = __instance.GetActor();
+					var patient = __instance.job?.targetA.Pawn;
+
+					if (doctor == null || patient == null)
+						return JobCondition.Ongoing;
+
+					return WorkGiver_Tend.GoodLayingStatusForTend(patient, doctor)
+						? JobCondition.Ongoing
+						: JobCondition.Succeeded;
+				});
+
+				foreach (var toil in __result)
+				{
+					// Toils_Tend.FinalizeTend uses this debug name.
+					if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
+					{
+						toil.AddFinishAction(() => completedFirstTendCycle = true);
+					}
+
+					yield return toil;
+				}
+			}
+		}
+	}
+
 	[HarmonyPatch(typeof(WorkGiver_Tend), "HasJobOnThing")]
 	public static class NeedTendBeforeStatusForTend
 	{
