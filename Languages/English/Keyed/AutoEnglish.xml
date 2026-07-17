@@ -20,7 +20,7 @@
 	<TD.SettingMedicineGoodEnough>... include medicine that is good enough:</TD.SettingMedicineGoodEnough>
 	<TD.SettingStockUp>Stock Up on medicine &amp; drugs</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>Stock Up settings are in the colonist's Gear Tab</TD.SettingStockUpDesc>
-	<TD.SettingFieldTendingIfDying>Doctors will treat patients if they are downed and wouldn't survive to the hospital</TD.SettingFieldTendingIfDying>
+	<TD.SettingFieldTendingIfDying>Doctors will treat patients if they wouldn't survive to the hospital</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBeds>Doctors will treat patients if no beds are available</TD.SettingFieldTendingNoBeds>
 	<TD.SettingFieldTendingNoBedsDesc>The patient must be resting, downed, or drafted to target</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>Doctors can always tend, with or without a bed</TD.SettingFieldTendingAlways>

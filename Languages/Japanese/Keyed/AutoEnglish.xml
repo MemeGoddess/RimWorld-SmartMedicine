@@ -21,6 +21,7 @@
   <TD.SettingStockUp>薬とドラッグの常備設定：</TD.SettingStockUp>
   <TD.SettingStockUpDesc>薬とドラッグを所持品に入れて持ち運ぶ設定は入植者の装備タブにあります。</TD.SettingStockUpDesc>
   <TD.SettingFieldTendingNoBeds>ベッドがない場合、医師はその場で患者を治療する</TD.SettingFieldTendingNoBeds>
+	<TD.SettingFieldTendingIfDying>医師は、患者が病院まで運ばれても助からない場合、その場で治療する</TD.SettingFieldTendingIfDying>
   <TD.SettingFieldTendingNoBedsDesc>患者がベッドで休息中か倒れている、または向かっている目標が徴兵されていなければならない</TD.SettingFieldTendingNoBedsDesc>
   <TD.SettingFieldTendingAlways>医師はベッドの有無に関係なく、いつでも治療することが可能</TD.SettingFieldTendingAlways>
   <TD.SettingFieldTendingAlwaysDesc>入植者はベッドに向かうことを優先しますが、あなたは治療のために彼らをその場に留まらせる手段として患者を徴兵することが可能です。</TD.SettingFieldTendingAlwaysDesc>

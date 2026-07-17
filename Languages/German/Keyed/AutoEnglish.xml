@@ -21,6 +21,7 @@
 	<TD.SettingStockUp>Inventarisierung von Medizin &amp; Drogen</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>Die Einstellungen für die Inventarisierung befinden sich in der Registerkarte Inventar des Kolonisten.</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>Ärzte werden Patienten im Feld behandeln, wenn keine Betten verfügbar sind.</TD.SettingFieldTendingNoBeds>
+	<TD.SettingFieldTendingIfDying>Ärzte werden Patienten vor Ort behandeln, wenn sie den Weg ins Krankenhaus nicht überleben würden.</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>Der Patient muss sich ausruhen, bewusstlos oder im Kampfmodus sein.</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>Ärzte werden Patienten im Feld behandeln, auch wenn Betten verfügbar sind.</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>Kolonisten werden ein Bett aufsuchen, aber Du kannst Patienten in den Kampfmodus versetzen, um sie im Feld zu verpflegen.</TD.SettingFieldTendingAlwaysDesc>
