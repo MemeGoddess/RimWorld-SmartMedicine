@@ -399,7 +399,7 @@ namespace SmartMedicine
 				}
 			}
 			
-			var ticksUntilDeath = Mod.settings.TicksUntilDead(patient);
+			var ticksUntilDeath = FieldTendingUtility.TicksUntilDead(patient);
 
 			MedicalCareCategory defaultCare = patient.GetCare();
 

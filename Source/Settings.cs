@@ -170,7 +170,7 @@ namespace SmartMedicine
 				var carryTimeFactor = 1f / carryMoveSpeedFactor;
 				
 				ticksToReachBed = Mathf.CeilToInt(pathToPatient + (pathToBed * carryTimeFactor));
-				var ticksUntilDead = TicksUntilDead(patient);
+				var ticksUntilDead = FieldTendingUtility.TicksUntilDead(patient);
 				
 				// Leave at least 2 hours to tend, otherwise it's kinda over anyway
 				if (ticksToReachBed + (GenDate.TicksPerHour * 2) > ticksUntilDead)
@@ -182,62 +182,6 @@ namespace SmartMedicine
 				return true;
 
 			return false;
-		}
-
-		private const int quickReturn = 625;
-		public int TicksUntilDead(Pawn patient)
-		{
-			if (patient?.health == null || patient?.health.Dead is true)
-				return int.MaxValue;
-
-			var ticksUntilDeath = HealthUtility.TicksUntilDeathDueToBloodLoss(patient);
-			
-			// Close enough to death, exact number doesn't matter
-			if (ticksUntilDeath < quickReturn)
-				return ticksUntilDeath;
-
-			foreach (var hediff in patient.health.hediffSet.GetHediffsTendable())
-			{
-				if (hediff.TryGetComp<HediffComp_DisappearsAndKills>() is { } disappearKills)
-				{
-					var ticks = disappearKills.EffectiveTicksToDisappear;
-
-					if (ticks < quickReturn)
-						return ticks;
-
-					if (ticks < ticksUntilDeath)
-					{
-						ticksUntilDeath = ticks;
-						continue;
-					}
-				}
-
-				// Kill at Severity
-				if(!hediff.IsLethal)
-						continue;
-				
-				if (hediff is HediffWithComps hediffWithComps)
-				{
-					var severityPerDay = hediffWithComps.comps
-						.OfType<HediffComp_SeverityModifierBase>()
-						.Sum(c => c.SeverityChangePerDay());
-
-					if (severityPerDay <= 0f)
-						continue;
-
-					var remainingSeverity = hediff.def.lethalSeverity - hediff.Severity;
-					if (remainingSeverity <= 0f)
-						return 0;
-
-					var ticks = Mathf.CeilToInt(remainingSeverity / severityPerDay * GenDate.TicksPerDay);
-					if(ticks < quickReturn)
-						return ticks;
-					if(ticks < ticksUntilDeath) 
-						ticksUntilDeath = ticks;
-				}
-			}
-
-			return ticksUntilDeath;
 		}
 
 		public void DoWindowContents(Rect wrect)
