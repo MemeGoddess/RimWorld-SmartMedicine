@@ -29,6 +29,7 @@ namespace SmartMedicine
 		public float stockUpEnough = 1.5f;
 		public bool stockUpReturn = false;
 
+		public bool fieldTendingIfDying = true;
 		public bool fieldTendingForLackOfBed = false;
 		public bool fieldTendingAlways = false;
 
@@ -73,6 +74,8 @@ namespace SmartMedicine
 
 		private string settingStockUpReturn;
 
+		private string settingFieldTendingIfDying;
+		
 		private string settingFieldTendingNoBeds;
 		private string settingFieldTendingNoBedsDesc;
 
@@ -120,6 +123,7 @@ namespace SmartMedicine
 			settingStockUpEnough = "TD.SettingStockUpEnough".Translate();
 			settingStockUpEnoughDesc = "TD.SettingStockUpEnoughDesc".Translate();
 			settingStockUpReturn = "TD.SettingStockUpReturn".Translate();
+			settingFieldTendingIfDying = "TD.SettingFieldTendingIfDying".Translate();
 			settingFieldTendingNoBeds = "TD.SettingFieldTendingNoBeds".Translate();
 			settingFieldTendingNoBedsDesc = "TD.SettingFieldTendingNoBedsDesc".Translate();
 			settingFieldTendingAlways = "TD.SettingFieldTendingAlways".Translate();
@@ -138,19 +142,16 @@ namespace SmartMedicine
 
 		public bool FieldTendingActive(Pawn patient, Pawn doctor = null)
 		{
-			if (!patient.IsFreeColonist || (!fieldTendingAlways && !fieldTendingForLackOfBed))
+			if (!patient.IsFreeColonist)
 				return false;
 
 			if (fieldTendingAlways)
 				return true;
 
 			var bed = RestUtility.FindPatientBedFor(patient);
-			// No Bed
-			if (bed == null)
-				return true;
 			
 			// Bed too far
-			if(doctor != null && patient.health.Downed)
+			if(fieldTendingIfDying && bed != null && doctor != null && patient.health.Downed)
 			{
 				var ticksToReachBed = 0;
 				var pathToPatient = 0f;
@@ -172,18 +173,19 @@ namespace SmartMedicine
 				var ticksUntilDead = TicksUntilDead(patient) ?? 0;
 				
 				// Leave at least 2 hours to tend, otherwise it's kinda over anyway
-				Log.Message($"{ ticksToReachBed.TicksToDays() * 24}hrs to reach bed");
-				Log.Message($"{(ticksToReachBed + (GenDate.TicksPerHour * 2)).TicksToDays() * 24}hrs to reach bed with buffer");
-				Log.Message($"{ ticksUntilDead.TicksToDays() * 24}hrs to death");
 				if (ticksToReachBed + (GenDate.TicksPerHour * 2) > ticksUntilDead)
 					return true;
 			}
+			
+			// No Bed
+			if (bed == null && fieldTendingForLackOfBed)
+				return true;
 
 			return false;
 		}
 
 		private const int quickReturn = 3600;
-		private int? TicksUntilDead(Pawn patient)
+		public int? TicksUntilDead(Pawn patient)
 		{
 			if (patient?.health == null || patient?.health.Dead is true)
 				return null;
@@ -287,7 +289,7 @@ namespace SmartMedicine
 			options.CheckboxLabeled(settingStockUpReturn, ref stockUpReturn);
 			options.Gap();
 
-
+			options.CheckboxLabeled(settingFieldTendingIfDying, ref fieldTendingIfDying);
 			options.CheckboxLabeled(settingFieldTendingNoBeds, ref fieldTendingForLackOfBed, settingFieldTendingNoBedsDesc);
 			if (fieldTendingForLackOfBed)
 				fieldTendingAlways = false; 
@@ -362,6 +364,7 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref stockUpEnough, "stockUpEnough", 1.5f);
 			Scribe_Values.Look(ref stockUpReturn, "stockUpReturn", false);
 
+			Scribe_Values.Look(ref fieldTendingIfDying, "fieldTendingIfDying", true);
 			Scribe_Values.Look(ref fieldTendingForLackOfBed, "fieldTendingForLackOfBed", false);
 			Scribe_Values.Look(ref fieldTendingAlways, "fieldTendingAlways", false);
 			Scribe_Values.Look(ref defaultUnlimitedSurgery, "defaultUnlimitedSurgery", false);

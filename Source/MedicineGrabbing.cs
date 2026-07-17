@@ -8,6 +8,7 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 using HarmonyLib;
+using JetBrains.Annotations;
 using TD.Utilities;
 
 namespace SmartMedicine
@@ -397,6 +398,8 @@ namespace SmartMedicine
 					Log.Message($"Sufficient medicine for non-urgent care is {sufficientQuality}");
 				}
 			}
+			
+			var ticksUntilDeath = Mod.settings.TicksUntilDead(patient);
 
 			MedicalCareCategory defaultCare = patient.GetCare();
 
@@ -419,11 +422,6 @@ namespace SmartMedicine
 				finalCare = toUse > finalCare ? toUse : finalCare;
 			}
 			Log.Message($"Care for {patient} is {defaultCare}, Custom care = {finalCare}");
-
-			//if (defaultCare < finalCare)
-			//{
- 				
-			//}
 
 			//Android Droid support;
 			Predicate<Thing> validatorDroid = t => true;
@@ -452,13 +450,19 @@ namespace SmartMedicine
 
 				//Add each ground
 				foreach (Thing t in groundMedicines)
+				{
+					var distance = DistanceTo(t, healer, patient, healer);
+					if(distance > ticksUntilDeath || (distance > ticksUntilDeath / 2 && ticksUntilDeath < GenDate.TicksPerHour * 2))
+						continue;
+					
 					allMeds.Add(new MedicineEvaluator()
 					{
 						thing = t,
 						pawn = null,
 						rating = MedicineRating(t, sufficientQuality),
-						distance = DistanceTo(t, healer, patient)
+						distance = distance,
 					});
+				}
 			}
 
 			//Ground-only medicines:
@@ -480,7 +484,7 @@ namespace SmartMedicine
 			if (!Mod.settings.useAnimalMedicine)
 				pawns.RemoveAll(p => !p.IsColonist);
 
-			int minDistance = DistanceTo(healer, patient);
+			int minDistance = DistanceTo(healer, patient, null);
 			if (!Mod.settings.useOtherEvenIfFar)
 				pawns.RemoveAll(p => DistanceTo(p, healer, patient) > minDistance + Mod.settings.distanceToUseFromOther * 2); //*2, there and back
 
@@ -496,7 +500,7 @@ namespace SmartMedicine
 					thing = t,
 					pawn = p,
 					rating = MedicineRating(t, sufficientQuality),
-					distance = DistanceTo(p, healer, patient)
+					distance = DistanceTo(p, healer, patient, healer)
 				});
 			}
 
@@ -549,7 +553,7 @@ namespace SmartMedicine
 				if (count > 0)
 				{
 					List<MedicineEvaluator> equalMedicines = allMeds.FindAll(eval => eval.rating == bestMed.rating);
-					equalMedicines.SortBy(eval => DistanceTo(bestMed.pawn ?? bestMed.thing, eval.pawn ?? eval.thing));
+					equalMedicines.SortBy(eval => DistanceTo(bestMed.pawn ?? bestMed.thing, eval.pawn ?? eval.thing, null));
 					Thing droppedMedicine = null;
 					Log.Message($"But needs {count} more");
 					while (count > 0 && equalMedicines.Count > 0)
@@ -559,7 +563,7 @@ namespace SmartMedicine
 
 						closeMed.DebugLog("More: ");
 
-						if (DistanceTo(droppedMedicine ?? bestMed.pawn ?? bestMed.thing, closeMed.pawn ?? closeMed.thing) > 8f) //8f as defined in CheckForGetOpportunityDuplicate
+						if (DistanceTo(droppedMedicine ?? bestMed.pawn ?? bestMed.thing, closeMed.pawn ?? closeMed.thing, null) > 8f) //8f as defined in CheckForGetOpportunityDuplicate
 							break;
 
 						usedCount = Mathf.Min(closeMed.thing.stackCount, count);
@@ -603,14 +607,22 @@ namespace SmartMedicine
 			return medQuality;
 		}
 
-		private static int DistanceTo(Thing t1, Thing t2)
+		private static int DistanceTo(Thing t1, Thing t2, Pawn pather)
 		{
+			if (pather != null)
+			{
+				var realPath = pather.Map.pathFinder.FindPathNow(t1.Position, t2.Position, pather);
+				var actualDistance = realPath?.Found is true ? realPath.TotalCost : 0f;
+				realPath?.ReleaseToPool();
+				if(actualDistance > 0f)
+					return (int)actualDistance;
+			}
 			return (t1.Position - t2.Position).LengthManhattan;
 		}
 
-		private static int DistanceTo(Thing t, Thing t1, Thing t2)
+		private static int DistanceTo(Thing t, Thing t1, Thing t2, Pawn pather)
 		{
-			return DistanceTo(t, t1) + DistanceTo(t, t2);
+			return DistanceTo(t, t1, pather) + DistanceTo(t, t2, pather);
 		}
 	}
 }
