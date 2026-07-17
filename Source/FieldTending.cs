@@ -50,9 +50,9 @@ namespace SmartMedicine
 	static class GoodLayingStatusForTend_Patch
 	{
 		//public static bool GoodLayingStatusForTend(Pawn patient, Pawn doctor)
-		public static void Postfix(Pawn patient, ref bool __result)
+		public static void Postfix(Pawn patient, Pawn doctor, ref bool __result)
 		{
-			if (!__result && Mod.settings.FieldTendingActive(patient))
+			if (!__result && Mod.settings.FieldTendingActive(patient, doctor))
 				__result = (patient.GetPosture() != PawnPosture.Standing)
 					|| (patient.Drafted && patient.jobs.curDriver is JobDriver_Wait	//Tend while idle + drafted
 					&& !patient.stances.FullBodyBusy && !patient.stances.stagger.Staggered);

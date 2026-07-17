@@ -136,11 +136,109 @@ namespace SmartMedicine
 
 		private static Action<Listing_Standard> RenderCurrentTab = null;
 
-		public bool FieldTendingActive(Pawn patient)
+		public bool FieldTendingActive(Pawn patient, Pawn doctor = null)
 		{
-			return patient.IsFreeColonist && 
-				(fieldTendingAlways || 
-				(fieldTendingForLackOfBed && RestUtility.FindPatientBedFor(patient) == null));
+			if (!patient.IsFreeColonist || (!fieldTendingAlways && !fieldTendingForLackOfBed))
+				return false;
+
+			if (fieldTendingAlways)
+				return true;
+
+			var bed = RestUtility.FindPatientBedFor(patient);
+			// No Bed
+			if (bed == null)
+				return true;
+			
+			// Bed too far
+			if(doctor != null && patient.health.Downed)
+			{
+				var ticksToReachBed = 0;
+				var pathToPatient = 0f;
+				if ((doctor.Position - patient.Position).LengthHorizontalSquared > 10f)
+				{
+					var doctorPath = doctor.Map.pathFinder.FindPathNow(doctor.Position, patient.Position, doctor);
+					pathToPatient = doctorPath?.Found is true ? doctorPath.TotalCost : 0f;
+					doctorPath?.ReleaseToPool();
+				}
+
+				var patientPath = doctor.Map.pathFinder.FindPathNow(patient.Position, bed.Position, doctor);
+				var pathToBed = patientPath?.Found is true ? patientPath.TotalCost : 0f;
+				patientPath?.ReleaseToPool();
+
+				const float carryMoveSpeedFactor = 0.6f;
+				var carryTimeFactor = 1f / carryMoveSpeedFactor;
+				
+				ticksToReachBed = Mathf.CeilToInt(pathToPatient + (pathToBed * carryTimeFactor));
+				var ticksUntilDead = TicksUntilDead(patient) ?? 0;
+				
+				// Leave at least 2 hours to tend, otherwise it's kinda over anyway
+				Log.Message($"{ ticksToReachBed.TicksToDays() * 24}hrs to reach bed");
+				Log.Message($"{(ticksToReachBed + (GenDate.TicksPerHour * 2)).TicksToDays() * 24}hrs to reach bed with buffer");
+				Log.Message($"{ ticksUntilDead.TicksToDays() * 24}hrs to death");
+				if (ticksToReachBed + (GenDate.TicksPerHour * 2) > ticksUntilDead)
+					return true;
+			}
+
+			return false;
+		}
+
+		private const int quickReturn = 3600;
+		private int? TicksUntilDead(Pawn patient)
+		{
+			if (patient?.health == null || patient?.health.Dead is true)
+				return null;
+
+			var ticksUntilDeath = HealthUtility.TicksUntilDeathDueToBloodLoss(patient);
+			
+			// Close enough to death, exact number doesn't matter
+			if (ticksUntilDeath < quickReturn)
+				return ticksUntilDeath;
+
+			foreach (var hediff in patient.health.hediffSet.GetHediffsTendable())
+			{
+				if (hediff.TryGetComp<HediffComp_DisappearsAndKills>() is { } disappearKills)
+				{
+					var ticks = disappearKills.EffectiveTicksToDisappear;
+
+					if (ticks < quickReturn)
+						return ticks;
+
+					if (ticks < ticksUntilDeath)
+					{
+						ticksUntilDeath = ticks;
+						continue;
+					}
+				}
+
+				// Kill at Severity
+				if(!hediff.IsLethal)
+						continue;
+				
+				if (hediff is HediffWithComps hediffWithComps)
+				{
+					var severityPerDay = hediffWithComps.comps
+						.OfType<HediffComp_SeverityModifierBase>()
+						.Sum(c => c.SeverityChangePerDay());
+
+					if (severityPerDay <= 0f)
+						continue;
+
+					var remainingSeverity = hediff.def.lethalSeverity - hediff.Severity;
+					if (remainingSeverity <= 0f)
+						return 0;
+
+					var ticks = Mathf.CeilToInt(remainingSeverity / severityPerDay * GenDate.TicksPerDay);
+					if(ticks < quickReturn)
+						return ticks;
+					if(ticks < ticksUntilDeath) 
+						ticksUntilDeath = ticks;
+				}
+			}
+
+			if (ticksUntilDeath == int.MaxValue)
+				return null;
+
+			return ticksUntilDeath;
 		}
 
 		public void DoWindowContents(Rect wrect)
