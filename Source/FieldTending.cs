@@ -109,6 +109,9 @@ namespace SmartMedicine
 
 		private static void TryRecoverMedicine(Pawn doctor, Pawn patient, Job job)
 		{
+			if (!Mod.settings.useDoctorMedicine)
+				return;
+			
 			if (doctor?.carryTracker == null || job == null)
 			{
 				return;

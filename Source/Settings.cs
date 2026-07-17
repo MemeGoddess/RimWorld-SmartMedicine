@@ -142,7 +142,7 @@ namespace SmartMedicine
 
 		public bool FieldTendingActive(Pawn patient, Pawn doctor = null)
 		{
-			if (!patient.IsFreeColonist)
+			if (!patient.IsFreeColonist || patient.Dead)
 				return false;
 
 			if (fieldTendingAlways)

@@ -8,7 +8,6 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 using HarmonyLib;
-using JetBrains.Annotations;
 using TD.Utilities;
 
 namespace SmartMedicine
@@ -486,7 +485,7 @@ namespace SmartMedicine
 
 			int minDistance = DistanceTo(healer, patient, null);
 			if (!Mod.settings.useOtherEvenIfFar)
-				pawns.RemoveAll(p => DistanceTo(p, healer, patient) > minDistance + Mod.settings.distanceToUseFromOther * 2); //*2, there and back
+				pawns.RemoveAll(p => DistanceTo(p, healer, patient, null) > minDistance + Mod.settings.distanceToUseFromOther * 2); //*2, there and back
 
 			pawns.RemoveAll(p => !validatorHolder(p));
 
