@@ -184,7 +184,7 @@ namespace SmartMedicine
 			return false;
 		}
 
-		private const int quickReturn = 3600;
+		private const int quickReturn = 625;
 		public int? TicksUntilDead(Pawn patient)
 		{
 			if (patient?.health == null || patient?.health.Dead is true)
