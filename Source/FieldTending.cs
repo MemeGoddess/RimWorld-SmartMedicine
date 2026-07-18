@@ -9,6 +9,8 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 using HarmonyLib;
+using SmartMedicine.Compatibility;
+using SmartMedicine.Compatibility.CombatExtended;
 
 namespace SmartMedicine
 {
@@ -50,15 +52,94 @@ namespace SmartMedicine
 	static class GoodLayingStatusForTend_Patch
 	{
 		//public static bool GoodLayingStatusForTend(Pawn patient, Pawn doctor)
-		public static void Postfix(Pawn patient, ref bool __result)
+		public static void Postfix(Pawn patient, Pawn doctor, ref bool __result)
 		{
-			if (!__result && Mod.settings.FieldTendingActive(patient))
+			if (!__result && Mod.settings.FieldTendingActive(patient, doctor))
 				__result = (patient.GetPosture() != PawnPosture.Standing)
 					|| (patient.Drafted && patient.jobs.curDriver is JobDriver_Wait	//Tend while idle + drafted
 					&& !patient.stances.FullBodyBusy && !patient.stances.stagger.Staggered);
 		}
 	}
 
+	[HarmonyPatch(typeof(JobDriver_TendPatient), "MakeNewToils")]
+	static class TendPatient_CheckEachTendPatch
+	{
+		[HarmonyPostfix]
+		public static IEnumerable<Toil> Postfix(IEnumerable<Toil> __result, JobDriver_TendPatient __instance)
+		{
+			bool shouldCheck = false;
+			bool attemptedMedicineRecovery = false;
+
+			__instance.AddEndCondition(delegate
+			{
+				if (!shouldCheck)
+				{
+					return JobCondition.Ongoing;
+				}
+
+				var doctor = __instance.GetActor();
+				var patient = __instance.job?.targetA.Pawn;
+				if (doctor == null || patient == null)
+				{
+					return JobCondition.Ongoing;
+				}
+
+				if (WorkGiver_Tend.GoodLayingStatusForTend(patient, doctor))
+				{
+					shouldCheck = false;
+					return JobCondition.Ongoing;
+				}
+
+				if (!attemptedMedicineRecovery)
+				{
+					attemptedMedicineRecovery = true;
+					TryRecoverMedicine(doctor, patient, __instance.job);
+				}
+
+				return JobCondition.Succeeded;
+			});
+
+			foreach (var toil in __result)
+			{
+				if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
+				{
+					toil.AddFinishAction(delegate { shouldCheck = true; });
+				}
+
+				yield return toil;
+			}
+		}
+
+		private static void TryRecoverMedicine(Pawn doctor, Pawn patient, Job job)
+		{
+			if (!Mod.settings.useDoctorMedicine)
+				return;
+			
+			if (doctor?.carryTracker == null || job == null)
+			{
+				return;
+			}
+
+			Thing medicine = job.targetB.Thing;
+			if (medicine == null || medicine.DestroyedOrNull())
+			{
+				return;
+			}
+
+			if (doctor.carryTracker.CarriedThing != medicine)
+			{
+				return;
+			}
+
+			if (doctor.inventory != null && doctor.carryTracker.CarriedThing != null)
+			{
+				var carriedThing = doctor.carryTracker.CarriedThing;
+				doctor.carryTracker.innerContainer.TryTransferToContainer(carriedThing, doctor.inventory.innerContainer,
+					carriedThing.stackCount);
+			}
+		}
+	}
+	
 	[HarmonyPatch(typeof(WorkGiver_Tend), "HasJobOnThing")]
 	public static class NeedTendBeforeStatusForTend
 	{
@@ -199,6 +280,83 @@ namespace SmartMedicine
 				else
 					yield return instruction;
 			}
+		}
+	}
+
+	public static class FieldTendingUtility
+	{
+		private const int quickReturn = 625;
+		public static int TicksUntilDead(Pawn patient)
+		{
+			if (patient?.health == null || patient?.health.Dead is true)
+				return int.MaxValue;
+
+			var ticksUntilDeath = HealthUtility.TicksUntilDeathDueToBloodLoss(patient);
+			
+			// Close enough to death, exact number doesn't matter
+			if (ticksUntilDeath < quickReturn)
+				return ticksUntilDeath;
+
+			foreach (var hediff in patient.health.hediffSet.GetHediffsTendable())
+			{
+				if (hediff.TryGetComp<HediffComp_DisappearsAndKills>() is { } disappearKills)
+				{
+					var ticks = disappearKills.EffectiveTicksToDisappear;
+
+					if (ticks < quickReturn)
+						return ticks;
+
+					if (ticks < ticksUntilDeath)
+					{
+						ticksUntilDeath = ticks;
+						continue;
+					}
+				}
+
+				// Kill at Severity
+				if(!hediff.IsLethal)
+					continue;
+				
+				if (hediff is HediffWithComps hediffWithComps)
+				{
+					var severityPerDay = hediffWithComps.comps
+						.OfType<HediffComp_SeverityModifierBase>()
+						.Sum(c => c.SeverityChangePerDay());
+
+					if (severityPerDay <= 0f)
+						continue;
+
+					var remainingSeverity = hediff.def.lethalSeverity - hediff.Severity;
+					if (remainingSeverity <= 0f)
+						return 0;
+
+					var ticks = Mathf.CeilToInt(remainingSeverity / severityPerDay * GenDate.TicksPerDay);
+					if(ticks < quickReturn)
+						return ticks;
+					if(ticks < ticksUntilDeath) 
+						ticksUntilDeath = ticks;
+				}
+			}
+
+			return ticksUntilDeath;
+		}
+
+		public static int DistanceTo(Thing t1, Thing t2, Pawn pather)
+		{
+			if (pather != null)
+			{
+				var realPath = pather.Map.pathFinder.FindPathNow(t1.Position, t2.Position, pather);
+				var actualDistance = realPath?.Found is true ? realPath.TotalCost : 0f;
+				realPath?.ReleaseToPool();
+				if(actualDistance > 0f)
+					return (int)actualDistance;
+			}
+			return (t1.Position - t2.Position).LengthManhattan;
+		}
+
+		public static int DistanceTo(Thing t, Thing t1, Thing t2, Pawn pather)
+		{
+			return DistanceTo(t, t1, pather) + DistanceTo(t, t2, pather);
 		}
 	}
 }

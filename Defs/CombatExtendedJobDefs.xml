@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+	<WorkGiverDef>
+		<defName>SmartMedicineStabilize</defName>
+		<giverClass>SmartMedicine.Compatibility.CombatExtended.WorkGiver_Stabilize</giverClass>
+		<workType>Doctor</workType>
+		<verb>Stabilizing</verb>
+		<gerund>Stabilizing</gerund>
+		<emergency>true</emergency>
+		<requiredCapacities>
+			<li>Manipulation</li>
+		</requiredCapacities>
+		<priorityInType>115</priorityInType>
+		<prioritizeSustains>true</prioritizeSustains>
+	</WorkGiverDef>
+</Defs>

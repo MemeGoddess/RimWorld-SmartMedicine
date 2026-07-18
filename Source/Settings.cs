@@ -6,6 +6,7 @@ using Verse;
 using RimWorld;
 using SmartMedicine.Compatibility;
 using TD.Utilities;
+using Verse.AI;
 
 namespace SmartMedicine
 {
@@ -29,6 +30,7 @@ namespace SmartMedicine
 		public float stockUpEnough = 1.5f;
 		public bool stockUpReturn = false;
 
+		public bool fieldTendingIfDying = true;
 		public bool fieldTendingForLackOfBed = false;
 		public bool fieldTendingAlways = false;
 
@@ -73,6 +75,8 @@ namespace SmartMedicine
 
 		private string settingStockUpReturn;
 
+		private string settingFieldTendingIfDying;
+		
 		private string settingFieldTendingNoBeds;
 		private string settingFieldTendingNoBedsDesc;
 
@@ -120,6 +124,7 @@ namespace SmartMedicine
 			settingStockUpEnough = "TD.SettingStockUpEnough".Translate();
 			settingStockUpEnoughDesc = "TD.SettingStockUpEnoughDesc".Translate();
 			settingStockUpReturn = "TD.SettingStockUpReturn".Translate();
+			settingFieldTendingIfDying = "TD.SettingFieldTendingIfDying".Translate();
 			settingFieldTendingNoBeds = "TD.SettingFieldTendingNoBeds".Translate();
 			settingFieldTendingNoBedsDesc = "TD.SettingFieldTendingNoBedsDesc".Translate();
 			settingFieldTendingAlways = "TD.SettingFieldTendingAlways".Translate();
@@ -136,11 +141,51 @@ namespace SmartMedicine
 
 		private static Action<Listing_Standard> RenderCurrentTab = null;
 
-		public bool FieldTendingActive(Pawn patient)
+		public bool FieldTendingActive(Pawn patient, Pawn doctor = null)
 		{
-			return patient.IsFreeColonist && 
-				(fieldTendingAlways || 
-				(fieldTendingForLackOfBed && RestUtility.FindPatientBedFor(patient) == null));
+			if (!fieldTendingAlways && !fieldTendingForLackOfBed && !fieldTendingIfDying)
+				return false;
+			
+			if (!patient.IsFreeColonist || patient.Dead || doctor?.CanReserve(patient) is false)
+				return false;
+
+			if (fieldTendingAlways)
+				return true;
+
+			var bed = RestUtility.FindPatientBedFor(patient);
+			
+			// Bed too far
+			if(fieldTendingIfDying && bed != null && doctor != null && patient.health.Downed)
+			{
+				var ticksToReachBed = 0;
+				var pathToPatient = 0f;
+				if ((doctor.Position - patient.Position).LengthHorizontalSquared > 10f)
+				{
+					var doctorPath = doctor.Map.pathFinder.FindPathNow(doctor.Position, patient.Position, doctor);
+					pathToPatient = doctorPath?.Found is true ? doctorPath.TotalCost : 0f;
+					doctorPath?.ReleaseToPool();
+				}
+
+				var patientPath = doctor.Map.pathFinder.FindPathNow(patient.Position, bed.Position, doctor);
+				var pathToBed = patientPath?.Found is true ? patientPath.TotalCost : 0f;
+				patientPath?.ReleaseToPool();
+
+				const float carryMoveSpeedFactor = 0.6f;
+				var carryTimeFactor = 1f / carryMoveSpeedFactor;
+				
+				ticksToReachBed = Mathf.CeilToInt(pathToPatient + (pathToBed * carryTimeFactor));
+				var ticksUntilDead = FieldTendingUtility.TicksUntilDead(patient);
+				
+				// Leave at least 2 hours to tend, otherwise it's kinda over anyway
+				if (ticksToReachBed + (GenDate.TicksPerHour * 2) > ticksUntilDead)
+					return true;
+			}
+			
+			// No Bed
+			if (bed == null && fieldTendingForLackOfBed)
+				return true;
+
+			return false;
 		}
 
 		public void DoWindowContents(Rect wrect)
@@ -189,7 +234,7 @@ namespace SmartMedicine
 			options.CheckboxLabeled(settingStockUpReturn, ref stockUpReturn);
 			options.Gap();
 
-
+			options.CheckboxLabeled(settingFieldTendingIfDying, ref fieldTendingIfDying);
 			options.CheckboxLabeled(settingFieldTendingNoBeds, ref fieldTendingForLackOfBed, settingFieldTendingNoBedsDesc);
 			if (fieldTendingForLackOfBed)
 				fieldTendingAlways = false; 
@@ -264,6 +309,7 @@ namespace SmartMedicine
 			Scribe_Values.Look(ref stockUpEnough, "stockUpEnough", 1.5f);
 			Scribe_Values.Look(ref stockUpReturn, "stockUpReturn", false);
 
+			Scribe_Values.Look(ref fieldTendingIfDying, "fieldTendingIfDying", true);
 			Scribe_Values.Look(ref fieldTendingForLackOfBed, "fieldTendingForLackOfBed", false);
 			Scribe_Values.Look(ref fieldTendingAlways, "fieldTendingAlways", false);
 			Scribe_Values.Look(ref defaultUnlimitedSurgery, "defaultUnlimitedSurgery", false);

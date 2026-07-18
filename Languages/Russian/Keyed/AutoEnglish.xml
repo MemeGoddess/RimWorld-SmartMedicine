@@ -21,6 +21,7 @@
 	<TD.SettingStockUp>Запастись лекарствами и наркотиками</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>Настройки запаса находятся во вкладке Назначения</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>Врачи будут лечить пациентов даже если нет свободных медицинских кроватей</TD.SettingFieldTendingNoBeds>
+	<TD.SettingFieldTendingIfDying>Врачи будут лечить пациентов на месте, если те не доживут до госпиталя</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>Пациент должен быть в состоянии покоя, лежать или в режиме призыва</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>Врачи всегда могут ухаживать: с медицинскими кроватями или без них</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>Колонист будет стараться лечь в кровать, но вы можете их держать на месте в режиме призыва</TD.SettingFieldTendingAlwaysDesc>

@@ -21,6 +21,7 @@
 	<TD.SettingStockUp>儲備藥物 &amp; 成癮品</TD.SettingStockUp>
 	<TD.SettingStockUpDesc>（儲備設置在殖民者的裝備欄中）</TD.SettingStockUpDesc>
 	<TD.SettingFieldTendingNoBeds>即使沒有床位，醫生也會給病人治療。</TD.SettingFieldTendingNoBeds>
+	<TD.SettingFieldTendingIfDying>如果病人撐不到被送到醫院，醫生會就地給他們治療</TD.SettingFieldTendingIfDying>
 	<TD.SettingFieldTendingNoBedsDesc>病人必須休息，躺下，或者被徵召到目標</TD.SettingFieldTendingNoBedsDesc>
 	<TD.SettingFieldTendingAlways>醫生隨時可以進行治療，無論是否有床。</TD.SettingFieldTendingAlways>
 	<TD.SettingFieldTendingAlwaysDesc>殖民者會優先去床上，但是你可以徵召病人讓他們待在一個地方。</TD.SettingFieldTendingAlwaysDesc>
