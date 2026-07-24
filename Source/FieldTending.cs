@@ -103,7 +103,7 @@ namespace SmartMedicine
 			{
 				if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
 				{
-					toil.AddFinishAction(delegate { shouldCheck = true; });
+					toil.AddFinishAction(delegate { shouldCheck = __instance.job?.targetA.Pawn?.Downed ?? false; });
 				}
 
 				yield return toil;
