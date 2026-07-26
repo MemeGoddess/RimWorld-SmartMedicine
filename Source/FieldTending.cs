@@ -103,7 +103,13 @@ namespace SmartMedicine
 			{
 				if (toil != null && string.Equals(toil.debugName, "FinalizeTend", StringComparison.Ordinal))
 				{
-					toil.AddFinishAction(delegate { shouldCheck = __instance.job?.targetA.Pawn?.Downed ?? false; });
+					toil.AddFinishAction(delegate
+					{
+						var pawn = __instance.job?.targetA.Pawn;
+						if (pawn == null)
+							return;
+						shouldCheck =  pawn.IsPlayerControlled && pawn.Downed;
+					});
 				}
 
 				yield return toil;
