@@ -9,6 +9,7 @@ using HarmonyLib;
 using Verse;
 using Verse.AI;
 using RimWorld;
+using SmartMedicine.Compatibility;
 
 namespace SmartMedicine
 {
@@ -162,9 +163,18 @@ namespace SmartMedicine
 
 	//ITab_Pawn_Gear
 	//private void DrawThingRow(ref float y, float width, Thing thing, bool inventory = false)
-	[HarmonyPatch(typeof(ITab_Pawn_Gear), "FillTab")]
+	[HarmonyPatch]
 	public static class FillTab_Patch
 	{
+		[HarmonyTargetMethods]
+		public static IEnumerable<MethodBase> TargetMethods()
+		{
+			yield return AccessTools.Method(typeof(ITab_Pawn_Gear), "FillTab");
+			if(CompatibilityLoader.CombatExtended)
+				yield return AccessTools.Method(AccessTools.TypeByName("ITab_Inventory"), "FillTab");
+		}
+		
+		[HarmonyTranspiler]
 		public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator il, MethodBase mb)
 		{
 			IList<LocalVariableInfo> locals = mb.GetMethodBody().LocalVariables;
