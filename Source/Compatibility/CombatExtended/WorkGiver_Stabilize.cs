@@ -39,16 +39,19 @@ public class WorkGiver_Stabilize : WorkGiver_Scanner
 		var ticksUntilDead = FieldTendingUtility.TicksUntilDead(patient);
 		var bed = RestUtility.FindPatientBedFor(patient);
 			
-		return (ticksUntilDead < GenDate.TicksPerHour * 2 || (bed != null && ticksUntilDead < FieldTendingUtility.DistanceTo(pawn, patient, bed, pawn))) && pawn.inventory?.innerContainer?.InnerListForReading?.Any(x => x.def.IsMedicine) is true && pawn.CanReserve((LocalTargetInfo) (Thing) patient, ignoreOtherReservations: forced) && (!patient.IsMutant || patient.mutant.Def.entitledToMedicalCare) && (!patient.InAggroMentalState || patient.health.hediffSet.HasHediff(HediffDefOf.Scaria));
+		return (ticksUntilDead < GenDate.TicksPerHour * 2 || (bed != null && ticksUntilDead < FieldTendingUtility.DistanceTo(pawn, patient, bed, pawn))) &&
+		       FindBestMedicine.Find(pawn, patient, out _, true).Any() && 
+		       pawn.CanReserve((LocalTargetInfo) (Thing) patient, ignoreOtherReservations: forced) && 
+		       (!patient.IsMutant || patient.mutant.Def.entitledToMedicalCare) && 
+		       (!patient.InAggroMentalState || patient.health.hediffSet.HasHediff(HediffDefOf.Scaria));
 	}
 	
-	public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
+	public override Job JobOnThing(Pawn healer, Thing t, bool forced = false)
 	{
-		if(t is not Pawn pawn1)
+		if(t is not Pawn patient)
 			return null;
 		
-		var meds = GetBestMeds(pawn);
-		meds ??=  GetBestMeds(pawn1);
+		var meds = GetBestMeds(healer, patient);
 		if(meds == null)
 			return null;
 		
@@ -58,27 +61,22 @@ public class WorkGiver_Stabilize : WorkGiver_Scanner
 		return job;
 	}
 
-	private static Medicine GetBestMeds(Pawn pawn)
+	private static Medicine GetBestMeds(Pawn healer, Pawn patient)
 	{
-		if (pawn?.inventory?.innerContainer == null)
+		if (healer?.inventory?.innerContainer == null)
 			return null;
 
-		var meds = new List<Medicine>();
-		foreach (var thing in pawn.inventory.innerContainer.InnerListForReading)
-		{
-			if(!thing.def.IsMedicine || thing is not Medicine med)
-				continue;
-			meds.Add(med);
-		}
-		
+		var meds = FindBestMedicine.Find(healer, patient, out int totalCount, true);
 		if(meds.Count == 0)
 			return null;
 
-		return meds.MaxBy(x => x.GetStatValue(StatDefOf.MedicalPotency));
+		return meds.FirstOrDefault().Thing as Medicine;
 	}
 	
 	private bool IsValidTendTarget(Pawn doctor, Pawn patient)
 	{
-		return (patient.Downed || !patient.HostileTo(doctor.Faction) && (patient.IsColonist || patient.IsQuestLodger() || patient.IsPrisonerOfColony || patient.IsSlaveOfColony || patient.Faction == Faction.OfPlayer && patient.IsAnimal || patient.IsColonySubhuman && patient.mutant.Def.entitledToMedicalCare));
+		return (patient.Downed || !patient.HostileTo(doctor.Faction)) && 
+			(patient.IsColonist || patient.IsQuestLodger() || patient.IsPrisonerOfColony || patient.IsSlaveOfColony || patient.Faction == Faction.OfPlayer && patient.IsAnimal || patient.IsColonySubhuman && patient.mutant.Def.entitledToMedicalCare) &&
+			patient.playerSettings.medCare >= MedicalCareCategory.HerbalOrWorse;
 	}
 }
