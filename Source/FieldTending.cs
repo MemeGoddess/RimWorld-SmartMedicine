@@ -16,6 +16,42 @@ namespace SmartMedicine
 {
 	public class Building_TempTendSpot : Building_Bed
 	{
+		//The spot is spawned while a job is being *generated*, but CleanUpTempBeds only destroys it
+		//when the LayDown job *finishes*. Every path that generates the job and then discards it
+		//(failed pre-toil reservations, ShouldStartJobFromThinkTree rejecting an override, the job
+		//being returned to the pool) leaves a spot behind with no job to ever clean it up,
+		//so the spot removes itself once nothing has used it for a while.
+		private const int idleTicksBeforeRemoval = 300;
+
+		private int lastUsedTick = -1;
+
+		private bool InUse =>
+			AnyOccupants ||
+			(Map?.reservationManager.IsReserved(this) ?? false);
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref lastUsedTick, "lastUsedTick", -1);
+		}
+
+		public override void TickRare()
+		{
+			base.TickRare();
+
+			if (InUse)
+			{
+				lastUsedTick = Find.TickManager.TicksGame;
+				return;
+			}
+
+			if (Find.TickManager.TicksGame - lastUsedTick > idleTicksBeforeRemoval)
+			{
+				Log.Message($"Removing unused bed {this} at {Position}");
+				Destroy();
+			}
+		}
+
 		public override string GetInspectString()
 		{
 			return DescriptionDetailed.TrimEndNewlines();
@@ -43,6 +79,10 @@ namespace SmartMedicine
 			// Clear ForPrisoners after deciding to lay down in a prison.
 			// There are a few other cases where ForPrisoners is set true, but don't expect to run into them.
 			ForOwnerType = BedOwnerType.Colonist;
+
+			//Also covers spots orphaned by an older version, loaded from an existing save.
+			if (lastUsedTick < 0)
+				lastUsedTick = Find.TickManager.TicksGame;
 		}
 
 	}
