@@ -11,6 +11,7 @@
 			<graphicClass>Graphic_Single</graphicClass>
 		</graphicData>
 		<altitudeLayer>FloorEmplacement</altitudeLayer>
+		<tickerType>Rare</tickerType>
 		<selectable>true</selectable>
 		<statBases>
 			<WorkToBuild>0</WorkToBuild>
