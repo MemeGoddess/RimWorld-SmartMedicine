@@ -10,7 +10,7 @@ using HarmonyLib;
 namespace SmartMedicine
 {
 	[StaticConstructorOnStartup]
-	static class GetPawnMedicalCareCategory
+	public static class GetPawnMedicalCareCategory
 	{
 		//        public static MedicalCareCategory TendAdvice(Pawn patient) 
 		public delegate MedicalCareCategory TendAdviceDel(Pawn patient);

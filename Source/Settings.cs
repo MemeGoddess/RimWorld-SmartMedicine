@@ -159,16 +159,10 @@ namespace SmartMedicine
 			{
 				var ticksToReachBed = 0;
 				var pathToPatient = 0f;
-				if ((doctor.Position - patient.Position).LengthHorizontalSquared > 10f)
-				{
-					var doctorPath = doctor.Map.pathFinder.FindPathNow(doctor.Position, patient.Position, doctor);
-					pathToPatient = doctorPath?.Found is true ? doctorPath.TotalCost : 0f;
-					doctorPath?.ReleaseToPool();
-				}
+				if ((doctor.Position - patient.Position).LengthHorizontalSquared > 10f) 
+					pathToPatient = GetPathCost(doctor, doctor.Position, patient.Position);
 
-				var patientPath = doctor.Map.pathFinder.FindPathNow(patient.Position, bed.Position, doctor);
-				var pathToBed = patientPath?.Found is true ? patientPath.TotalCost : 0f;
-				patientPath?.ReleaseToPool();
+				var pathToBed = GetPathCost(doctor, doctor.Position, bed.Position);
 
 				const float carryMoveSpeedFactor = 0.6f;
 				var carryTimeFactor = 1f / carryMoveSpeedFactor;
@@ -186,6 +180,15 @@ namespace SmartMedicine
 				return true;
 
 			return false;
+		}
+
+		public float GetPathCost(Pawn pawn, IntVec3 start, IntVec3 end)
+		{
+			var pawnPath = pawn.Map.pathFinder.FindPathNow(start, end, pawn);
+			var pathCost = pawnPath?.Found is true ? pawnPath.TotalCost : 0f;
+			pawnPath?.ReleaseToPool();
+
+			return pathCost;
 		}
 
 		public void DoWindowContents(Rect wrect)

@@ -1,49 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
-    <OutputType>Library</OutputType>
-    <RootNamespace>SmartMedicine</RootNamespace>
-    <AssemblyName>SmartMedicine</AssemblyName>
-    <LangVersion>latest</LangVersion>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <RootNamespace>SmartMedicine</RootNamespace>
+        <AssemblyName>SmartMedicine</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <Version>1.7</Version>
+    	<GenerateDependencyFile>false</GenerateDependencyFile>
+    </PropertyGroup>
 
-  <!-- Debug Configuration -->
+    <!-- Debug Configuration -->
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugSymbols>true</DebugSymbols>
         <DebugType>portable</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>..\1.6\Assemblies</OutputPath>
+        <OutputPath>..\$(Version)\Assemblies</OutputPath>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
         <Prefer32Bit>false</Prefer32Bit>
     </PropertyGroup>
 
-  <!-- Release Configuration -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <OutputPath>..\1.6\Assemblies\</OutputPath>
-    <Optimize>true</Optimize>
-    <DebugType>embedded</DebugType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4633" />
-    <PackageReference Include="Lib.Harmony" Version="2.*">
-      <ExcludeAssets>runtime</ExcludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <!-- Release Configuration -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <OutputPath>..\$(Version)\Assemblies\</OutputPath>
+        <Optimize>true</Optimize>
+        <DebugType>embedded</DebugType>
+        <Prefer32Bit>false</Prefer32Bit>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Krafs.Rimworld.Ref" Version="$(Version).*-*"/>
+        <PackageReference Include="Lib.Harmony" Version="2.4.2">
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
 </Project>

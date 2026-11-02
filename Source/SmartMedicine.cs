@@ -14,21 +14,18 @@ namespace SmartMedicine
 	{
 		public static Settings settings;
 		internal static Harmony harmony;
+		internal static ModContentPack contentPack;
 		public Mod(ModContentPack content) : base(content)
 		{
 			// initialize settings
 			settings = GetSettings<Settings>();
-#if DEBUG
-			Harmony.DEBUG = true;
-#endif
 
 			harmony = new Harmony("uuugggg.rimworld.SmartMedicine.main");
 
-			harmony.PatchAllUncategorized();
-
+			harmony.PatchAllUncategorized(Assembly.GetExecutingAssembly());
 			
 			LongEventHandler.ExecuteWhenFinished(CompatibilityLoader.Setup);
-			
+			contentPack = content;
 		}
 
 		public override void DoSettingsWindowContents(Rect inRect)

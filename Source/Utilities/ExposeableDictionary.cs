@@ -53,16 +53,10 @@ namespace TD.Utilities
 		{
 			if (typeof(ILoadReferenceable).IsAssignableFrom(typeof(K)))
 			{
-#if DEBUG
-				Log.Warning($"Assuming ExposeableDictionary key type {typeof(K)} to LookMode.Reference");
-#endif
 				keyMode = LookMode.Reference;  //We are assuming, set Deep if needed
 			}
 			if (typeof(ILoadReferenceable).IsAssignableFrom(typeof(V)))
 			{
-#if DEBUG
-				Log.Warning($"Assuming ExposeableDictionary value type {typeof(V)} to LookMode.Reference");
-#endif
 				valMode = LookMode.Reference;  //We are assuming, set Deep if needed
 			}
 		}
