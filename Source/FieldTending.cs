@@ -16,6 +16,9 @@ namespace SmartMedicine
 {
 	public class Building_TempTendSpot : Building_Bed
 	{
+		private static int idleTicksBeforeRemoval = GenDate.TicksPerHour;
+		private int lastUsedTick = Find.TickManager.TicksGame;
+		
 		public override string GetInspectString()
 		{
 			return DescriptionDetailed.TrimEndNewlines();
@@ -45,6 +48,25 @@ namespace SmartMedicine
 			ForOwnerType = BedOwnerType.Colonist;
 		}
 
+		public override void TickRare()
+		{
+			base.TickRare();
+			var tick = Find.TickManager.TicksGame;
+			if (AnyOccupants || Map?.reservationManager.IsReserved(this) is true)
+			{
+				lastUsedTick = tick;
+				return;
+			}
+
+			if (tick - lastUsedTick > idleTicksBeforeRemoval) 
+				Destroy();
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref lastUsedTick, "lastUsedTick", Find.TickManager.TicksGame);
+		}
 	}
 
 	[HarmonyPatch(typeof(WorkGiver_Tend))]
