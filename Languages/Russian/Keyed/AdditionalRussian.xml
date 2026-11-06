@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<LanguageData>
+  <TD.Encumbered>Перегрузка</TD.Encumbered>
+  <TD.NiceHealthTab.Optimize>Оптимизация вкладки «Здоровье»</TD.NiceHealthTab.Optimize>
+  <TD.NiceHealthTab.OptimizeDesc>Оптимизация:
+- Кэширование неизменных названий состояний здоровья вместо перевода в каждом кадре
+	</TD.NiceHealthTab.OptimizeDesc>
+  <TD.SettingFieldTendingIfDying>Врачи лечат на месте пациентов, которые не доживут до доставки в больницу</TD.SettingFieldTendingIfDying>
+  <TD.StockAnythingWithoutDev>Показывать кнопку «Запасать что угодно» вне режима разработчика</TD.StockAnythingWithoutDev>
+</LanguageData>
